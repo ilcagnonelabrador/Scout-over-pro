@@ -1,0 +1,18 @@
+{
+  "name": "Scout Over PRO",
+  "short_name": "Scout⚽",
+  "description": "Analisi IPC Over 0.5PT / 0.5F / 1.5F / 2.5F con dati API-Football",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#060d16",
+  "theme_color": "#00aaff",
+  "lang": "it",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "screenshots": [],
+  "categories": ["sports", "utilities"],
+  "prefer_related_applications": false
+}
