@@ -23,7 +23,10 @@ const S={
   autoSec:LS.get('autoSec')||60,
   countdown:0,
   dismissed:LS.get('dismissed')||false,
-  leagues:null
+  leagues:null,
+  oddsApiKey: LS.get('oddsApiKey')||'',
+  oddsData: {},      // eventId → { over05: {betfair, pinnacle, avg, move}, over15: {...} }
+  goalAlerts: {},    // matchId → { active, level, lastNotify }
 };
 let _timer=null,_ctimer=null;
 
@@ -64,6 +67,34 @@ const ALL_LEAGUES=[
   {id:292,n:'K-League',f:'🇰🇷',r:'asia',s:2025,on:true},
   {id:307,n:'Saudi Pro Lge',f:'🇸🇦',r:'asia',s:2025,on:true},
 ];
+
+
+// The Odds API sport keys per campionato
+const ODDS_SPORT_KEYS = {
+  135:'soccer_italy_serie_a',
+  136:'soccer_italy_serie_b',
+  140:'soccer_spain_la_liga',
+  78: 'soccer_germany_bundesliga',
+  79: 'soccer_germany_bundesliga2',
+  61: 'soccer_france_ligue_one',
+  62: 'soccer_france_ligue_two',
+  88: 'soccer_netherlands_eredivisie',
+  94: 'soccer_portugal_primeira_liga',
+  144:'soccer_belgium_first_div',
+  203:'soccer_turkey_super_league',
+  39: 'soccer_epl',
+  40: 'soccer_england_championship',
+  45: 'soccer_fa_cup',
+  179:'soccer_scotland_premiership',
+  2:  'soccer_uefa_champs_league',
+  3:  'soccer_uefa_europa_league',
+  71: 'soccer_brazil_campeonato',
+  128:'soccer_argentina_primera_division',
+  130:'soccer_mexico_ligamx',
+  253:'soccer_usa_mls',
+  98: 'soccer_japan_j_league',
+  292:'soccer_korea_kleague1',
+};
 
 const MKT_L=['Ov 0.5 PT','Ov 0.5 FIN','Ov 1.5 FIN'];
 const MKT_K=['pt','f05','f15'];
@@ -135,6 +166,84 @@ function mkStats(hs,as_,h2h){
     h2h_pt,h2h_f05,h2h_f15};
 }
 
+/* ── THE ODDS API — flusso scommesse Betfair + multi-bookmaker ─── */
+async function fetchOddsAPI(matches){
+  if(!S.oddsApiKey)return;
+  // Raggruppa partite per sport key
+  const bySport={};
+  matches.forEach(m=>{
+    const sk=ODDS_SPORT_KEYS[m.leagueId];
+    if(!sk)return;
+    if(!bySport[sk])bySport[sk]=[];
+    bySport[sk].push(m);
+  });
+  for(const [sportKey, ms] of Object.entries(bySport)){
+    try{
+      const url=`https://api.the-odds-api.com/v4/sports/${sportKey}/odds/?apiKey=${S.oddsApiKey}&regions=eu,uk&markets=totals&oddsFormat=decimal&bookmakers=betfair,pinnacle,bet365,unibet`;
+      const res=await fetch(url);
+      if(!res.ok)continue;
+      const data=await res.json();
+      data.forEach(ev=>{
+        // Prova ad abbinare la partita per nome squadra
+        const match=ms.find(m=>
+          (ev.home_team&&m.casa&&levenshteinMatch(ev.home_team,m.casa))||
+          (ev.away_team&&m.trasferta&&levenshteinMatch(ev.away_team,m.trasferta))
+        );
+        if(!match)return;
+        const odResult={over05:{},over15:{},over25:{}};
+        ev.bookmakers?.forEach(bk=>{
+          bk.markets?.forEach(mkt=>{
+            if(mkt.key!=='totals')return;
+            mkt.outcomes?.forEach(out=>{
+              if(out.name!=='Over')return;
+              const point=parseFloat(out.point);
+              const odd=parseFloat(out.price);
+              if(point===0.5)odResult.over05[bk.key]={odd,point};
+              else if(point===1.5)odResult.over15[bk.key]={odd,point};
+              else if(point===2.5)odResult.over25[bk.key]={odd,point};
+            });
+          });
+        });
+        // Calcola media, movimento e consensus
+        ['over05','over15','over25'].forEach(mk=>{
+          const vals=Object.values(odResult[mk]).map(v=>v.odd).filter(v=>v>0);
+          if(!vals.length)return;
+          const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+          const min=Math.min(...vals);
+          const max=Math.max(...vals);
+          const betfairOdd=odResult[mk]['betfair']?.odd;
+          const pinnacleOdd=odResult[mk]['pinnacle']?.odd;
+          // Sharp money: se Betfair/Pinnacle è PIÙ BASSO della media soft books → denaro su Over
+          const sharpSignal=betfairOdd&&avg?((avg-betfairOdd)/avg)*100:0;
+          odResult[mk]={
+            ...odResult[mk],
+            avg:+avg.toFixed(3),
+            min:+min.toFixed(3),
+            max:+max.toFixed(3),
+            implProb:+(1/avg*100).toFixed(1),
+            betfairOdd:betfairOdd||null,
+            pinnacleOdd:pinnacleOdd||null,
+            sharpSignal:+sharpSignal.toFixed(1),
+            bookCount:vals.length,
+          };
+        });
+        S.oddsData[match.id]=odResult;
+      });
+    }catch(e){console.warn('Odds API:',e.message);}
+  }
+}
+
+// Semplice matching fuzzy per nomi squadra
+function levenshteinMatch(a,b){
+  if(!a||!b)return false;
+  a=a.toLowerCase().replace(/[^a-z]/g,'');
+  b=b.toLowerCase().replace(/[^a-z]/g,'');
+  if(a===b)return true;
+  if(a.includes(b.substring(0,5))||b.includes(a.substring(0,5)))return true;
+  return false;
+}
+
+
 async function fetchOdds(fid){
   try{
     const od=await apiFetch(`odds?fixture=${fid}&bookmaker=6`);
@@ -200,6 +309,7 @@ async function fetchMatches(){
         h2h_pt:60,h2h_f05:70,h2h_f15:58,
         topAttacco:false,derby:false,motivazioni:false,
         veto_forma:false,veto_quota:false,
+        leagueId:f.league?.id,
         nota:'Caricamento...',_loading:true};
     }).sort((a,b)=>a.orario.localeCompare(b.orario));
 
@@ -231,6 +341,7 @@ async function fetchMatches(){
       if(idx>=0)Object.assign(S.matches[idx],{...st,
         topAttacco:st.mgf_c>2.0||st.mgf_t>2.0,
         derby:false,motivazioni:false,veto_forma:veto,veto_quota:false,
+        leagueId:f.league?.id,
         nota:`${h2h.length} H2H • ${Object.keys(odData).length} mercati odds`,_loading:false});
       S.live[f.fixture?.id]={
         homeGoals:f.goals?.home??null,awayGoals:f.goals?.away??null,
@@ -239,6 +350,11 @@ async function fetchMatches(){
       if(i<fil.length-1)await new Promise(r=>setTimeout(r,150));
     }
     addLog(`✅ ${S.matches.length} partite pronte!`);
+    // Fetch volume da The Odds API (aggiuntivo, non blocca se fallisce)
+    if(S.oddsApiKey){
+      addLog('💹 Caricamento volumi Betfair...');
+      fetchOddsAPI(S.matches).then(()=>{addLog('✅ Volumi Betfair caricati');renderPage();}).catch(()=>{});
+    }
     startAuto();
   }catch(e){
     S.error=e.message;S.status='error';
@@ -319,6 +435,7 @@ function liveBox(fid,d,m){
     <div class="lrm"><span>${m?.casa||''}</span>${ht?`<span style="color:#2a5a7f">${ht}</span>`:''}<span>${m?.trasferta||''}</span></div>
     <div class="levs">${evH}</div>
     <div class="lra"><span class="adot"></span>Auto ogni ${S.autoSec}s</div>
+    ${(()=>{const r=buildGPIWidget(fid,S.live[fid]?.gpi!=null?{gpi:S.live[fid].gpi,factors:S.live[fid].gpiFactors||[],minute:d.minute}:null);return r;})()}
   </div>`;
 }
 
@@ -464,6 +581,15 @@ function saveKeySettings(){
   if(document.getElementById('keyinput'))document.getElementById('keyinput').value=k;
   alert('✅ API Key salvata!');renderPage();
 }
+
+function saveOddsKey(){
+  const k=document.getElementById('noki')?.value?.trim();
+  if(!k){alert('Inserisci la API Key di The Odds API');return;}
+  S.oddsApiKey=k;LS.set('oddsApiKey',k);
+  alert('✅ The Odds API Key salvata! Premi Aggiorna Ora per caricare i volumi Betfair.');
+  renderPage();
+}
+
 function setAutoSec(s){S.autoSec=s;LS.set('autoSec',s);if(S.autoOn){stopAuto();startAuto();}renderPage();}
 function toggleLeague(i){S.leagues[i].on=!S.leagues[i].on;LS.set('leagues',S.leagues);renderPage();}
 function clearEsiti(){if(!confirm('Cancellare tutto lo storico?'))return;S.esiti={};LS.set('esiti',{});renderPage();}
@@ -500,6 +626,118 @@ function exportCSV(){
   a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
   a.download=`Scout_${td.replace(/\//g,'-')}.csv`;a.click();
 }
+
+/* ══ GOAL PRESSURE INDEX (GPI) ═══════════════════════════════════ */
+function calcGPI(matchId){
+  const d=S.live[matchId]||{};
+  const mn=d.minute||0;
+  const st=d.status;
+  if(!['1H','2H','ET'].includes(st))return null;
+  let gpi=0,factors=[];
+
+  // Minuto
+  let ms=mn>=80?30:mn>=70?22:mn>=60?16:mn>=45?20:mn>=35?14:mn>=20?8:4;
+  gpi+=ms;factors.push({l:'Minuto '+mn+"'",v:ms,c:'#3a6a8f'});
+
+  // Corner
+  const cH=parseInt(d.cornerH||0),cA=parseInt(d.cornerA||0),cT=cH+cA;
+  if(cT>0){const cs=Math.min(25,cT*2.5);gpi+=cs;factors.push({l:'Corner: '+cT,v:cs,c:'#ff8800'});}
+
+  // Tiri in porta
+  const sH=parseInt(d.shotOnH||0),sA=parseInt(d.shotOnA||0),sT=sH+sA;
+  if(sT>0){const ss=Math.min(20,sT*2);gpi+=ss;factors.push({l:'Tiri porta: '+sT,v:ss,c:'#00aaff'});}
+
+  // Tiri totali
+  const stH=parseInt(d.shotH||0),stA=parseInt(d.shotA||0),stT=stH+stA;
+  if(stT>0){const sts=Math.min(10,stT*0.8);gpi+=sts;factors.push({l:'Tiri totali: '+stT,v:sts,c:'#00cc66'});}
+
+  // Azioni pericolose recenti (events)
+  const evs=d.events||[];
+  const recent=evs.filter(e=>e.time&&mn-e.time<=5&&['Goal','Card','subs'].includes(e.type)).length;
+  if(recent>0){const rs=Math.min(15,recent*5);gpi+=rs;factors.push({l:'Azioni recenti: '+recent,v:rs,c:'#ff4466'});}
+
+  // Flusso Betfair (sharp signal)
+  const od=S.oddsData[matchId];
+  const omk=S.mkt==='f15'?od?.over15:S.mkt==='f05'?od?.over05:od?.over05;
+  if(omk&&omk.sharpSignal>3){const vs=Math.min(10,omk.sharpSignal*2);gpi+=vs;factors.push({l:'Flusso Betfair: '+omk.sharpSignal.toFixed(1)+'%',v:vs,c:'#ffd700'});}
+
+  return{gpi:Math.min(100,Math.round(gpi)),factors,minute:mn};
+}
+
+function getGPILevel(g){
+  if(g>=80)return{l:'ALLERTA GOL',c:'#ff4466',bg:'rgba(255,68,102,.12)',pulse:true};
+  if(g>=60)return{l:'Alta pressione',c:'#ff8800',bg:'rgba(255,136,0,.08)',pulse:false};
+  if(g>=40)return{l:'Attenzione',c:'#ffcc00',bg:'rgba(255,204,0,.06)',pulse:false};
+  return{l:'Calma',c:'#00ff88',bg:'rgba(0,255,136,.04)',pulse:false};
+}
+
+function triggerGoalAlert(mid,gpi,match){
+  if(!S.goalAlerts[mid])S.goalAlerts[mid]={n60:false,n80:false,last:0};
+  const a=S.goalAlerts[mid];
+  if(gpi>=80&&!a.n80){
+    a.n80=true;notifyGoal(match,gpi,'🔴 ALLERTA MASSIMA GOL');
+  } else if(gpi>=60&&!a.n60){
+    a.n60=true;notifyGoal(match,gpi,'🟠 Alta pressione gol');
+  }
+  if(gpi<30&&a.last>=60){a.n60=false;a.n80=false;}
+  a.last=gpi;
+}
+
+function notifyGoal(match,gpi,title){
+  if(navigator.vibrate)navigator.vibrate([200,100,200,100,400]);
+  if(Notification.permission==='granted'){
+    try{new Notification(title+' — '+match.casa+' vs '+match.trasferta,{
+      body:'GPI: '+gpi+'/100 · Probabilità gol elevata',
+      icon:'icon-192.png',tag:'goal-'+match.id,renotify:true
+    });}catch(e){}
+  }
+  showInAppBanner(match,gpi,title);
+}
+
+function showInAppBanner(match,gpi,title){
+  const old=document.getElementById('gal-banner');if(old)old.remove();
+  const lv=getGPILevel(gpi);
+  const b=document.createElement('div');
+  b.id='gal-banner';
+  b.setAttribute('style','position:fixed;top:0;left:0;right:0;z-index:9999;background:'+lv.bg+';border-bottom:2px solid '+lv.c+';padding:12px 16px;cursor:pointer;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)');
+  b.innerHTML='<div style="display:flex;align-items:center;gap:10px"><div style="font-size:24px">⚽</div><div style="flex:1"><div style="font-size:12px;font-weight:800;color:'+lv.c+'">'+title+'</div><div style="font-size:11px;color:#e0f0ff;margin-top:2px">'+match.casa+' vs '+match.trasferta+'</div><div style="font-size:10px;color:#3a6a8f">GPI '+gpi+'/100</div></div><div style="font-size:22px;font-weight:900;color:'+lv.c+';font-family:monospace">'+gpi+'</div><button onclick="document.getElementById('gal-banner').remove()" style="background:none;border:none;color:#3a6a8f;font-size:20px;cursor:pointer;padding:4px">✕</button></div>';
+  b.onclick=function(e){if(e.target.tagName==='BUTTON')return;nav('analisi');b.remove();};
+  document.body.prepend(b);
+  setTimeout(function(){if(b.parentNode)b.remove();},15000);
+}
+
+async function requestNotifPerm(){
+  if(!('Notification'in window))return false;
+  if(Notification.permission==='granted')return true;
+  if(Notification.permission==='denied')return false;
+  return(await Notification.requestPermission())==='granted';
+}
+
+function buildGPIWidget(mid,res){
+  if(!res)return'<div id="gpi-'+mid+'"></div>';
+  const{gpi,factors,minute}=res;
+  const lv=getGPILevel(gpi);
+  return'<div id="gpi-'+mid+'" class="gpibox" style="border-color:'+lv.c+'44;background:'+lv.bg+'">'+
+    '<div class="gpitop"><span class="gpitit">⚽ Goal Pressure Index · '+minute+"'</span>"+
+    '<span class="gpival" style="color:'+lv.c+'">'+gpi+'/100</span></div>'+
+    '<div class="gpitrack"><div class="gpifill" style="width:'+gpi+'%;background:'+lv.c+'"></div></div>'+
+    '<div class="gpilvl" style="color:'+lv.c+'">'+lv.l+'</div>'+
+    (factors.length?'<div class="gpifactors">'+factors.map(function(f){return'<div class="gpif"><span>'+f.l+'</span><span style="color:'+f.c+';font-weight:700">+'+Math.round(f.v)+'</span></div>';}).join('')+'</div>':'')+'</div>';
+}
+
+function updateAllGPI(){
+  S.matches.forEach(function(m){
+    const d=S.live[m.id];
+    if(!d||!['1H','2H','ET'].includes(d.status))return;
+    const res=calcGPI(m.id);
+    if(!res)return;
+    d.gpi=res.gpi;d.gpiFactors=res.factors;
+    triggerGoalAlert(m.id,res.gpi,m);
+    const el=document.getElementById('gpi-'+m.id);
+    if(el)el.outerHTML=buildGPIWidget(m.id,res);
+  });
+}
+
 
 /* ══════════════════════════════════════════════════════════════════
    RENDER PRINCIPALE — un'unica funzione che aggiorna #main
@@ -613,6 +851,30 @@ function buildHome(){
 
     // Bottone vai ad analisi
     if(done>0){
+      // Mostra alert GPI se ci sono partite con alta pressione
+      const highGPI=S.matches.filter(m=>{
+        const d=S.live[m.id];
+        return d&&d.gpi>=60&&['1H','2H','ET'].includes(d.status);
+      });
+      if(highGPI.length>0){
+        h+=`<div class="gal-home">
+          <div class="gal-title">🔴 Goal Alert Attivi (${highGPI.length})</div>
+          ${highGPI.map(m=>{
+            const d=S.live[m.id];
+            const lv=getGPILevel(d.gpi);
+            return`<div class="gal-row" onclick="nav('analisi')" style="border-color:${lv.c}44">
+              <div class="gal-teams">${m.casa} vs ${m.trasferta}</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:10px;color:#3a6a8f">${d.minute}'</span>
+                <div style="width:60px;height:4px;background:#0a1825;border-radius:2px;overflow:hidden">
+                  <div style="width:${d.gpi}%;height:100%;background:${lv.c}"></div>
+                </div>
+                <span style="font-size:12px;font-weight:800;color:${lv.c}">${d.gpi}</span>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`;
+      }
       h+=`<button class="gotobtn" onclick="nav('analisi')">
         📊 Vedi Analisi Complete →
       </button>`;
@@ -839,32 +1101,90 @@ function buildStats(){
 /* ── SETTINGS ───────────────────────────────────────────────────── */
 function buildSettings(){
   const saved=LS.get('apiKey')||'';
-  const masked=saved?saved.substring(0,4)+'•••'+saved.slice(-4):'Non configurata';
+  const masked=saved?saved.substring(0,4)+'..'+saved.slice(-4):'Non configurata';
+  const odMasked=S.oddsApiKey?S.oddsApiKey.substring(0,6)+'..':'Non configurata';
+  const notifStatus=typeof Notification!=='undefined'?
+    (Notification.permission==='granted'?'<span style="color:#00ff88">Attive</span>':
+     Notification.permission==='denied'?'<span style="color:#ff4466">Negate</span>':
+     '<span style="color:#ffcc00">Non richieste</span>'):'N/D';
   const tot=Object.keys(S.esiti).filter(k=>['V','P'].includes(S.esiti[k])).length;
   const win=Object.values(S.esiti).filter(v=>v==='V').length;
   const regOrder=['europe','uk','americas','asia'];
 
   return`
   <div class="ssec">
-    <div class="ssectit">🔑 API Key</div>
-    <div class="setrow"><div class="setlbl">Chiave attuale</div><div class="setval">${masked}</div></div>
+    <div class="ssectit">🔑 API-Football</div>
+    <div class="setrow">
+      <div class="setlbl"><div>Chiave</div><div style="font-size:10px;color:#3a6a8f">Partite, statistiche, risultati live</div></div>
+      <div class="setval">${masked}</div>
+    </div>
     <div style="display:flex;gap:8px;margin-top:10px">
-      <input type="text" id="nki" placeholder="Nuova API Key..." style="flex:1;background:#0f1e2e;border:1px solid #1a3a5a;border-radius:10px;padding:10px 12px;color:#e0f0ff;font-size:12px;outline:none;-webkit-appearance:none;font-family:monospace">
+      <input type="text" id="nki" placeholder="API Key api-football.com..." style="flex:1;background:#0f1e2e;border:1px solid #1a3a5a;border-radius:10px;padding:10px 12px;color:#e0f0ff;font-size:12px;outline:none;-webkit-appearance:none;font-family:monospace">
       <button onclick="saveKeySettings()" style="background:rgba(255,204,0,.12);border:1px solid rgba(255,204,0,.4);border-radius:10px;padding:10px 14px;color:#ffcc00;font-size:12px;font-weight:700;cursor:pointer">Salva</button>
     </div>
-    <div style="font-size:10px;color:#2a5a7f;margin-top:8px;line-height:1.6">
-      ➜ Registrati su <b style="color:#00aaff">dashboard.api-football.com</b><br>
-      ➜ 100 richieste/giorno • Gratis • No carta di credito
+    <div style="font-size:10px;color:#2a5a7f;margin-top:6px">
+      dashboard.api-football.com · 100 req/giorno · Gratis
+    </div>
+  </div>
+
+  <div class="ssec">
+    <div class="ssectit">💹 The Odds API — Betfair Exchange</div>
+    <div class="setrow">
+      <div class="setlbl"><div>Chiave</div><div style="font-size:10px;color:#3a6a8f">Volumi reali da Betfair + Pinnacle</div></div>
+      <div class="setval">${odMasked}</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input type="text" id="noki" placeholder="API Key the-odds-api.com..." style="flex:1;background:#0f1e2e;border:1px solid #1a3a5a;border-radius:10px;padding:10px 12px;color:#e0f0ff;font-size:12px;outline:none;-webkit-appearance:none;font-family:monospace">
+      <button onclick="saveOddsKey()" style="background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);border-radius:10px;padding:10px 14px;color:#00ff88;font-size:12px;font-weight:700;cursor:pointer">Salva</button>
+    </div>
+    <div style="font-size:10px;color:#2a5a7f;margin-top:6px;line-height:1.6">
+      <b style="color:#00aaff">the-odds-api.com</b> · 500 req/mese · Gratis · No carta<br>
+      Mostra flussi reali Over da Betfair Exchange, Pinnacle e Bet365
+    </div>
+  </div>
+
+  <div class="ssec">
+    <div class="ssectit">🔔 Goal Alert — Notifiche</div>
+    <div class="setrow">
+      <div class="setlbl"><div>Stato notifiche</div><div style="font-size:10px;color:#3a6a8f">Alert push quando GPI &ge; 60/100</div></div>
+      <div class="setval">${notifStatus}</div>
+    </div>
+    <button onclick="requestNotifPerm().then(g=>{alert(g?'Notifiche attivate!':'Permesso negato');renderPage();})"
+      style="margin-top:10px;width:100%;padding:12px;border-radius:10px;background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.3);color:#00aaff;font-size:12px;font-weight:700;cursor:pointer">
+      🔔 Attiva notifiche push
+    </button>
+    <div style="font-size:10px;color:#2a5a7f;margin-top:6px;line-height:1.5">
+      Vibrazione + notifica quando una partita raggiunge alta pressione offensiva
+    </div>
+  </div>
+
+  <div class="ssec">
+    <div class="ssectit">⚽ Goal Pressure Index (GPI)</div>
+    <div style="font-size:11px;color:#3a6a8f;margin-bottom:10px">
+      Calcolato in tempo reale sulle partite in corso. Combina:
+    </div>
+    ${[
+      ['⏱️','Minuto','Pressione cresce nel 2° tempo (80\'+= massima)'],
+      ['🚩','Corner','Ogni corner = pericolo. Corner recenti = peso doppio'],
+      ['🎯','Tiri in porta','Proxy Expected Goals — ogni tiro conta'],
+      ['💹','Flusso Betfair','Quota Over in calo = soldi sharp in entrata'],
+      ['🔥','Azioni recenti','Pericoli negli ultimi 5 minuti'],
+    ].map(([ic,t,d])=>`<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #080f18;align-items:flex-start">
+      <span style="font-size:16px;flex-shrink:0">${ic}</span>
+      <div><div style="font-size:11px;font-weight:700;color:#e0f0ff">${t}</div>
+      <div style="font-size:10px;color:#2a5a7f;margin-top:1px">${d}</div></div>
+    </div>`).join('')}
+    <div style="margin-top:10px;padding:8px 10px;background:rgba(0,0,0,.3);border-radius:8px;font-size:10px;color:#3a6a8f;line-height:1.7">
+      🟢 0-39 Bassa &nbsp;·&nbsp; 🟡 40-59 Attenzione &nbsp;·&nbsp; 🟠 60-79 Alta pressione &nbsp;·&nbsp; 🔴 80+ Alert Massimo
     </div>
   </div>
 
   <div class="ssec">
     <div class="ssectit">⏱️ Aggiornamento Automatico</div>
-    <div class="setrow"><div class="setlbl">Stato</div><div class="setval" style="color:${S.autoOn?'#00ff88':'#556'}">${S.autoOn?'🔴 LIVE':'⚫ OFF'}</div></div>
+    <div class="setrow"><div class="setlbl">Stato</div><div class="setval" style="color:${S.autoOn?'#00ff88':'#556'}">${S.autoOn?'LIVE':'OFF'}</div></div>
     <div style="display:flex;gap:6px;margin-top:10px">
       ${[30,60,120,300].map(s=>`<button onclick="setAutoSec(${s})" style="flex:1;padding:9px 0;border-radius:8px;background:${S.autoSec===s?'rgba(0,170,255,.2)':'rgba(255,255,255,.03)'};border:1px solid ${S.autoSec===s?'#00aaff':'#1a3a5a'};color:${S.autoSec===s?'#00aaff':'#3a6a8f'};font-size:11px;cursor:pointer;font-weight:${S.autoSec===s?700:400}">${s<60?s+'s':s/60+'m'}</button>`).join('')}
     </div>
-    <div style="font-size:10px;color:#2a5a7f;margin-top:8px;line-height:1.5">ℹ️ 1 sola richiesta API per ciclo. Esiti V/P auto a fine partita.</div>
   </div>
 
   <div class="ssec">
@@ -884,15 +1204,12 @@ function buildSettings(){
   <div class="ssec">
     <div class="ssectit">📊 Storico</div>
     <div class="setrow"><div class="setlbl">Esiti inseriti</div><div class="setval">${tot}</div></div>
-    <div class="setrow"><div class="setlbl">Vittorie totali</div><div class="setval" style="color:#00cc66">${win}</div></div>
+    <div class="setrow"><div class="setlbl">Vittorie</div><div class="setval" style="color:#00cc66">${win}</div></div>
     <div class="setrow"><div class="setlbl">Hit Rate</div><div class="setval" style="color:${tot>0&&win/tot>=0.75?'#00ff88':'#ff4466'}">${tot>0?(win/tot*100).toFixed(1)+'%':'—'}</div></div>
-    <button onclick="clearEsiti()" style="margin-top:12px;width:100%;padding:12px;border-radius:10px;background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466;font-size:13px;font-weight:700;cursor:pointer">🗑️ Cancella storico esiti</button>
+    <button onclick="clearEsiti()" style="margin-top:12px;width:100%;padding:12px;border-radius:10px;background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466;font-size:13px;font-weight:700;cursor:pointer">Cancella storico esiti</button>
   </div>`;
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   INIT
-   ══════════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded',()=>{
   // Merge leagues
   const saved=LS.get('leagues');
