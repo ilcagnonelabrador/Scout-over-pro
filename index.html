@@ -12,7 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
 <title>Scout Over PRO</title>
 <style>
-/* ═══ BASE — iOS Safari safe ═══════════════════════════════════════ */
+/* ═══ RESET & BASE ══════════════════════════════════════════════ */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
   --bg:#060d16;--bg2:#0a1825;--bg3:#0f1e2e;
@@ -22,19 +22,15 @@
 }
 html{background:var(--bg)}
 body{
-  font-family:'Outfit',sans-serif;
-  color:var(--white);
-  background:var(--bg);
-  /* padding-bottom lascia spazio alla navbar fissa */
-  padding-bottom:calc(72px + env(safe-area-inset-bottom));
+  font-family:'Outfit',sans-serif;color:var(--white);background:var(--bg);
+  padding-bottom:calc(68px + env(safe-area-inset-bottom));
   padding-top:env(safe-area-inset-top);
 }
 
-/* ═══ TOP BAR — sticky scroll normale ══════════════════════════════ */
+/* ═══ TOPBAR ════════════════════════════════════════════════════ */
 #topbar{
   position:sticky;top:0;z-index:50;
-  background:var(--bg2);
-  border-bottom:1px solid var(--border);
+  background:var(--bg2);border-bottom:1px solid var(--border);
   padding:12px 14px 10px;
 }
 .tbrow1{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -42,140 +38,186 @@ body{
   background:linear-gradient(120deg,var(--blue),var(--green));
   -webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .liveinfo{display:flex;align-items:center;gap:6px}
-#ldot{width:7px;height:7px;border-radius:50%;background:#334;flex-shrink:0;
-  transition:background .3s}
+#ldot{width:7px;height:7px;border-radius:50%;background:#334;flex-shrink:0;transition:background .3s}
 #livelbl{font-size:10px;color:var(--gray)}
 .keyrow{display:flex;gap:8px;margin-bottom:10px}
-#keyinput{flex:1;background:var(--bg3);border:1px solid #1a3a5a;border-radius:10px;
+#keyinput{
+  flex:1;background:var(--bg3);border:1px solid #1a3a5a;border-radius:10px;
   padding:10px 12px;color:var(--white);font-size:12px;outline:none;
-  font-family:'JetBrains Mono',monospace;-webkit-appearance:none}
+  font-family:'JetBrains Mono',monospace;-webkit-appearance:none;
+}
 #keyinput:focus{border-color:var(--yel)}
 #keyinput::placeholder{color:#1a3a5a}
-.savebtn{background:rgba(255,204,0,.12);border:1px solid rgba(255,204,0,.4);
-  border-radius:10px;padding:10px 12px;color:var(--yel);font-size:12px;
-  font-weight:700;cursor:pointer}
-#refreshbtn{width:100%;padding:13px;border-radius:12px;
+.savebtn{
+  background:rgba(255,204,0,.12);border:1px solid rgba(255,204,0,.4);
+  border-radius:10px;padding:10px 13px;color:var(--yel);
+  font-size:13px;font-weight:700;cursor:pointer;
+}
+#refreshbtn{
+  width:100%;padding:13px;border-radius:12px;
   background:linear-gradient(135deg,#0044aa,#0088ff);
   border:1px solid #0066cc;color:#fff;font-size:14px;font-weight:800;
   cursor:pointer;text-transform:uppercase;letter-spacing:.5px;
   box-shadow:0 4px 20px rgba(0,136,255,.25);
-  display:flex;align-items:center;justify-content:center;gap:8px}
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
 #refreshbtn:disabled{background:#0a2040;border-color:#1a4a7f;box-shadow:none;cursor:not-allowed}
 #refreshbtn:active:not(:disabled){opacity:.85}
-.spin{width:14px;height:14px;border:2px solid #1a4a7f;
+.spin{
+  width:14px;height:14px;border:2px solid #1a4a7f;
   border-top-color:var(--blue);border-radius:50%;
-  animation:spin .8s linear infinite;display:inline-block;flex-shrink:0}
+  animation:spin .8s linear infinite;display:inline-block;flex-shrink:0;
+}
 
-/* ═══ LIVE BAR ══════════════════════════════════════════════════════ */
-#livebar{display:none;margin-top:8px;background:rgba(255,68,102,.07);
-  border:1px solid rgba(255,68,102,.2);border-radius:10px;padding:8px 12px}
+/* ═══ LIVE BAR ══════════════════════════════════════════════════ */
+#livebar{
+  display:none;margin-top:8px;background:rgba(255,68,102,.07);
+  border:1px solid rgba(255,68,102,.2);border-radius:10px;padding:8px 12px;
+}
 .lbrow{display:flex;align-items:center;justify-content:space-between}
 .lbt{font-size:11px;color:var(--red);font-weight:700}
 .lbsub{font-size:10px;color:var(--gray)}
 #lbcd{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--yel);font-weight:700}
-#pbtn{background:rgba(255,204,0,.1);border:1px solid rgba(255,204,0,.3);
-  border-radius:8px;padding:5px 10px;color:var(--yel);font-size:11px;font-weight:700;cursor:pointer}
+#pbtn{
+  background:rgba(255,204,0,.1);border:1px solid rgba(255,204,0,.3);
+  border-radius:8px;padding:5px 10px;color:var(--yel);font-size:11px;
+  font-weight:700;cursor:pointer;
+}
 #lbres{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
-.lbsc{font-size:10px;padding:2px 8px;border-radius:6px;
+.lbsc{
+  font-size:10px;padding:2px 8px;border-radius:6px;
   background:rgba(0,0,0,.3);border:1px solid var(--border);
-  color:var(--white);font-family:'JetBrains Mono',monospace}
+  color:var(--white);font-family:'JetBrains Mono',monospace;
+}
 .lbsc.ll{border-color:var(--red);color:var(--red)}
 
-/* ═══ LOG ════════════════════════════════════════════════════════════ */
-#logbox{display:none;margin-top:6px;padding:8px 10px;
-  background:rgba(0,0,0,.4);border-radius:8px;border:1px solid var(--border)}
-.logline{font-size:10px;color:#1a4a7f;margin-bottom:1px;
-  font-family:'JetBrains Mono',monospace}
+/* ═══ LOG ════════════════════════════════════════════════════════ */
+#logbox{
+  display:none;margin-top:6px;padding:8px 10px;
+  background:rgba(0,0,0,.4);border-radius:8px;border:1px solid var(--border);
+}
+.logline{font-size:10px;color:#1a4a7f;margin-bottom:1px;font-family:'JetBrains Mono',monospace}
 .logline.active{color:var(--blue)}
 
-/* ═══ MAIN CONTENT ══════════════════════════════════════════════════ */
+/* ═══ MAIN ═══════════════════════════════════════════════════════ */
 #main{padding:14px 14px 20px;min-height:60vh}
 
-/* ═══ BOTTOM NAV — fixed bottom ═════════════════════════════════════ */
+/* ═══ BOTTOM NAV ════════════════════════════════════════════════ */
 #botnav{
   position:fixed;bottom:0;left:0;right:0;z-index:50;
   background:var(--bg2);border-top:1px solid var(--border);
-  display:flex;
-  padding-bottom:env(safe-area-inset-bottom);
+  display:flex;padding-bottom:env(safe-area-inset-bottom);
 }
-.nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+.nb{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
   padding:10px 0;background:none;border:none;color:var(--gray);
-  font-family:'Outfit',sans-serif;cursor:pointer}
+  font-family:'Outfit',sans-serif;cursor:pointer;
+}
 .nb.nba{color:var(--blue)}
 .ni{font-size:20px}
 .nl{font-size:10px;font-weight:600}
 
-/* ═══ HOME ══════════════════════════════════════════════════════════ */
-.banner{background:linear-gradient(135deg,rgba(0,170,255,.1),rgba(0,255,136,.07));
-  border:1px solid rgba(0,170,255,.3);border-radius:14px;padding:14px;margin-bottom:14px}
+/* ═══ HOME ══════════════════════════════════════════════════════ */
+.banner{
+  background:linear-gradient(135deg,rgba(0,170,255,.1),rgba(0,255,136,.07));
+  border:1px solid rgba(0,170,255,.3);border-radius:14px;
+  padding:14px;margin-bottom:14px;
+}
 .bant{font-size:13px;font-weight:700;color:var(--blue);margin-bottom:6px}
 .bans{font-size:11px;color:var(--gray);line-height:1.8}
-.bandis{margin-top:10px;width:100%;padding:8px;border-radius:8px;
+.bandis{
+  margin-top:10px;width:100%;padding:8px;border-radius:8px;
   background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.3);
-  color:var(--blue);font-size:11px;cursor:pointer;display:block}
-.hero{text-align:center;padding:16px 0 12px;margin-bottom:16px;
-  border-bottom:1px solid var(--border)}
-.htitle{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:900;
+  color:var(--blue);font-size:11px;cursor:pointer;display:block;
+}
+.hero{
+  text-align:center;padding:16px 0 12px;
+  margin-bottom:16px;border-bottom:1px solid var(--border);
+}
+.htitle{
+  font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:900;
   background:linear-gradient(120deg,var(--blue),var(--green));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
 .hsub{font-size:10px;color:var(--gray);margin-top:4px}
 .hdate{font-size:10px;color:#1a4a7f;margin-top:3px}
 .idle{text-align:center;padding:24px 0}
 .idlet{font-size:16px;font-weight:700;color:var(--blue);margin-bottom:8px}
 .idled{font-size:13px;color:#2a5a7f;line-height:1.7}
 .progwrap{height:4px;background:#0a1825;border-radius:2px;overflow:hidden;margin-bottom:4px}
-.progbar{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));
-  border-radius:2px;transition:width .5s ease}
+.progbar{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:2px;transition:width .5s ease}
 .proglbl{font-size:11px;color:var(--gray);text-align:center;margin-bottom:12px}
 .sumrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.sumpill{background:rgba(255,255,255,.03);border:1px solid var(--border);
-  border-radius:10px;padding:10px 6px;text-align:center;cursor:pointer}
-.sumpill.son{background:rgba(var(--cc,0,170,255),.15);border-color:var(--cc,#00aaff)}
+.sumpill{
+  background:rgba(255,255,255,.03);border:1px solid var(--border);
+  border-radius:10px;padding:10px 6px;text-align:center;cursor:pointer;
+}
+.sumpill.son{border-color:var(--blue);background:rgba(0,170,255,.1)}
 .sumn{font-size:20px;font-weight:900;font-family:'JetBrains Mono',monospace}
 .suml{font-size:9px;color:var(--gray);text-transform:uppercase}
 .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px}
 .chips::-webkit-scrollbar{display:none}
-.chip{white-space:nowrap;font-size:11px;padding:6px 12px;
+.chip{
+  white-space:nowrap;font-size:11px;padding:6px 12px;
   background:rgba(255,255,255,.03);border:1px solid var(--border);
-  border-radius:20px;color:var(--gray);cursor:pointer}
-.chip.on{background:rgba(0,170,255,.15);border-color:#00aaff;color:#00aaff}
-.chip.on[style*="--cc"]{background:rgba(0,170,255,.15);border-color:var(--cc)}
-.lghdr{display:flex;align-items:center;gap:6px;padding:8px 0 4px;
-  border-top:1px solid #080f18;margin-top:6px}
+  border-radius:20px;color:var(--gray);cursor:pointer;
+}
+.chip.on{background:rgba(0,170,255,.15);border-color:var(--blue);color:var(--blue)}
+.lghdr{display:flex;align-items:center;gap:6px;padding:8px 0 4px;border-top:1px solid #080f18;margin-top:6px}
 .lgname{flex:1;font-size:11px;font-weight:700;color:var(--blue)}
-.lgcnt{font-size:10px;color:var(--gray);background:#0a1825;
-  padding:2px 7px;border-radius:10px}
-.mrow{display:flex;align-items:center;gap:8px;padding:8px 0;
-  border-bottom:1px solid #080f18}
+.lgcnt{font-size:10px;color:var(--gray);background:#0a1825;padding:2px 7px;border-radius:10px}
+.mrow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #080f18}
 .mtime{font-size:10px;color:var(--gray);font-family:'JetBrains Mono',monospace;min-width:36px}
-.mteams{flex:1;font-size:12px;color:var(--white);overflow:hidden;
-  white-space:nowrap;text-overflow:ellipsis}
+.mteams{flex:1;font-size:12px;color:var(--white);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .mvs{color:#1a3a5a;font-size:9px;margin:0 4px}
 .mconf{font-size:10px;font-weight:700;min-width:42px;text-align:right}
-.gotobtn{width:100%;padding:15px;margin-top:18px;border-radius:14px;
+.gotobtn{
+  width:100%;padding:15px;margin-top:18px;border-radius:14px;
   background:linear-gradient(135deg,rgba(0,255,136,.1),rgba(0,170,255,.08));
   border:1px solid rgba(0,255,136,.3);color:var(--green);
-  font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.5px}
+  font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.5px;
+}
+/* Goal Alert home */
+.gal-home{
+  background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);
+  border-radius:14px;padding:12px;margin-top:14px;margin-bottom:10px;
+}
+.gal-title{
+  font-size:11px;font-weight:700;color:var(--red);
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;
+}
+.gal-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 10px;background:rgba(0,0,0,.3);border-radius:10px;
+  margin-bottom:6px;cursor:pointer;border:1px solid transparent;
+}
+.gal-row:last-child{margin-bottom:0}
+.gal-teams{font-size:12px;font-weight:600;color:var(--white);flex:1}
 
-/* ═══ BADGE PUNTEGGIO ════════════════════════════════════════════════ */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;
-  border-radius:20px;font-size:10px;font-weight:800;
-  font-family:'JetBrains Mono',monospace;white-space:nowrap;margin-left:auto}
+/* ═══ BADGE ══════════════════════════════════════════════════════ */
+.badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 9px;border-radius:20px;font-size:10px;font-weight:800;
+  font-family:'JetBrains Mono',monospace;white-space:nowrap;margin-left:auto;
+}
 .bns{background:rgba(0,170,255,.07);border:1px solid rgba(0,170,255,.2);color:#2a5a7f}
 .bft{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:var(--green)}
 .bht{background:rgba(255,204,0,.1);border:1px solid rgba(255,204,0,.3);color:var(--yel)}
 .blive{background:rgba(255,68,102,.15);border:1px solid rgba(255,68,102,.4);color:var(--red)}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--red);
-  animation:pulse 1.2s ease-in-out infinite;flex-shrink:0}
+.dot{
+  width:6px;height:6px;border-radius:50%;background:var(--red);
+  animation:pulse 1.2s ease-in-out infinite;flex-shrink:0;
+}
 
-/* ═══ CARDS ANALISI ══════════════════════════════════════════════════ */
-.card{border-radius:14px;margin-bottom:10px;overflow:hidden;
-  animation:fadeUp .3s ease both}
+/* ═══ CARDS ══════════════════════════════════════════════════════ */
+.card{border-radius:14px;margin-bottom:10px;overflow:hidden;animation:fadeUp .3s ease both}
 .chead{padding:12px 14px;cursor:pointer}
 .cmeta{display:flex;align-items:center;gap:8px;margin-bottom:7px}
-.ctag{font-size:9px;color:#2a5a7f;background:#0a1825;padding:2px 8px;
+.ctag{
+  font-size:9px;color:#2a5a7f;background:#0a1825;padding:2px 8px;
   border-radius:20px;white-space:nowrap;max-width:130px;
-  overflow:hidden;text-overflow:ellipsis}
+  overflow:hidden;text-overflow:ellipsis;
+}
 .ctime{font-size:10px;color:#2a5a7f}
 .cteams{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .ct{font-size:13px;font-weight:700;color:var(--white);flex:1}
@@ -188,114 +230,17 @@ body{
 .chev{text-align:center;font-size:9px;color:#1a3050;padding-bottom:5px;cursor:pointer}
 .detail{padding:0 14px 14px;border-top:1px solid var(--border);display:none}
 .detail.open{display:block}
+.vlchip{
+  font-size:9px;padding:2px 7px;border-radius:10px;
+  background:rgba(0,0,0,.3);border:1px solid transparent;white-space:nowrap;
+}
 
-/* Live result box */
-.lrbox{background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);
-  border-radius:12px;padding:12px 14px;margin:12px 0 10px}
-.lrt{font-size:10px;color:var(--red);font-weight:700;
-  text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
-.lrs{font-size:32px;font-weight:900;font-family:'JetBrains Mono',monospace;
-  text-align:center;margin-bottom:4px}
-.lrm{display:flex;justify-content:space-between;font-size:10px;color:var(--gray)}
-.levs{margin-top:8px;max-height:80px;overflow-y:auto}
-.ev{font-size:10px;color:var(--gray);padding:2px 0;border-bottom:1px solid #080f18}
-.ev:last-child{border-bottom:none}
-.ev.gol{color:var(--green);font-weight:700}
-.lra{display:flex;align-items:center;gap:6px;margin-top:6px;
-  font-size:10px;color:#2a5a7f}
-.adot{width:6px;height:6px;border-radius:50%;background:var(--blue);
-  animation:pulse 2s ease-in-out infinite;flex-shrink:0}
-
-/* Odds box */
-.odbox{background:rgba(0,0,0,.25);border:1px solid rgba(255,204,0,.15);
-  border-radius:10px;padding:10px 12px;margin-bottom:10px}
-
-/* Stats grid */
-.sgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin:10px 0}
-.sbox{background:rgba(0,0,0,.3);border-radius:8px;padding:7px 10px}
-.sl{font-size:9px;color:#2a5a7f;margin-bottom:2px}
-.sv{font-size:13px;font-weight:800;font-family:'JetBrains Mono',monospace}
-.flags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
-.flag{font-size:10px;padding:2px 8px;border-radius:20px}
-.nota{font-size:11px;color:var(--gray);font-style:italic;
-  border-left:2px solid #1a3a5a;padding-left:8px;margin-bottom:10px}
-
-/* Esiti */
-.esbox{background:rgba(0,0,0,.2);border-radius:10px;padding:10px 12px;margin-top:6px}
-.estit{font-size:10px;color:#2a5a7f;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
-.esgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
-.esl{font-size:9px;color:#3a6a8f;margin-bottom:3px;text-align:center}
-.esbtns{display:flex;gap:2px}
-.ebtn{flex:1;padding:6px 0;border-radius:5px;font-size:10px;font-weight:700;
-  cursor:pointer;border:1px solid #1a3a5a;background:transparent;color:#3a6a8f}
-.ebtn.sV{border-color:var(--green);background:rgba(0,204,102,.2);color:var(--green)}
-.ebtn.sP{border-color:var(--red);background:rgba(255,68,102,.2);color:var(--red)}
-.ebtn.sN{border-color:#556;background:rgba(80,100,120,.2);color:#556}
-
-/* Vuoto / errore */
-.empty{text-align:center;padding:40px 16px}
-.emptyt{font-size:16px;font-weight:700;color:var(--blue);margin-bottom:8px}
-.emptyd{font-size:13px;color:#2a5a7f;line-height:1.7;margin-bottom:20px}
-.homebtn{padding:14px 28px;border-radius:12px;
-  background:linear-gradient(135deg,#0044aa,#0088ff);
-  border:1px solid #0066cc;color:white;font-size:14px;font-weight:700;cursor:pointer}
-.errbox{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.3);
-  border-radius:14px;padding:20px;margin-bottom:16px;text-align:center}
-.errt{color:var(--red);font-weight:700;margin-bottom:6px;font-size:15px}
-.errm{color:#7a9bbf;font-size:12px;line-height:1.5}
-
-/* ═══ STATS ══════════════════════════════════════════════════════════ */
-.stsec{background:rgba(0,255,136,.05);border:1px solid rgba(0,255,136,.2);
-  border-radius:14px;padding:16px;margin-bottom:14px}
-.sstit,.ssectit{font-size:11px;font-weight:700;color:var(--green);
-  text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
-.ssectit{color:var(--blue)}
-.stgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
-.stbox{background:rgba(0,0,0,.3);border-radius:10px;padding:10px 8px;text-align:center}
-.stn{font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace}
-.stl{font-size:10px;color:#2a5a7f}
-.sthr{font-size:24px;font-weight:900;font-family:'JetBrains Mono',monospace;
-  text-align:center;margin-top:8px}
-.slbl{font-size:11px;color:#2a5a7f;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
-.smktg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.smkt{background:rgba(0,0,0,.25);border:1px solid var(--border);
-  border-radius:12px;padding:10px 12px}
-.smktn{font-size:11px;font-weight:700;margin-bottom:5px}
-.smktr{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px}
-.smkth{font-size:18px;font-weight:900;font-family:'JetBrains Mono',monospace}
-.sfrow{display:flex;align-items:center;gap:8px;padding:9px 12px;
-  background:rgba(0,0,0,.2);border-radius:10px;margin-bottom:6px}
-
-/* ═══ SETTINGS ═══════════════════════════════════════════════════════ */
-.ssec{background:rgba(255,255,255,.02);border:1px solid var(--border);
-  border-radius:14px;padding:14px;margin-bottom:14px}
-.setrow{display:flex;align-items:center;gap:10px;padding:10px 0;
-  border-bottom:1px solid #080f18}
-.setrow:last-child{border-bottom:none}
-.setlbl{flex:1;font-size:13px;color:var(--white)}
-.setval{font-size:12px;color:var(--blue);font-family:'JetBrains Mono',monospace}
-.ltrow{display:flex;align-items:center;gap:8px;padding:7px 0;
-  border-bottom:1px solid #080f18}
-.ltrow:last-child{border-bottom:none}
-.tog{width:36px;height:20px;border-radius:10px;position:relative;
-  cursor:pointer;transition:background .2s;border:none;flex-shrink:0}
-.ton{background:var(--green);box-shadow:0 0 8px rgba(0,255,136,.4)}
-.toff{background:#1e3a5f}
-.tog::after{content:'';position:absolute;top:3px;left:3px;
-  width:14px;height:14px;border-radius:50%;background:white;transition:left .2s}
-.ton::after{left:19px}
-
-/* Export */
-.expbtn{width:100%;padding:13px;margin-top:12px;border-radius:12px;
-  background:linear-gradient(135deg,#003a1a,#005a28);
-  border:1px solid var(--green);color:var(--green);
-  font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.5px}
-
-/* ═══ ANIMATIONS ══════════════════════════════════════════════════ */
-
-/* ═══ VOLUME SCOMMESSE ═══════════════════════════════════════════ */
-.volbar{margin:8px 0 0;padding:9px 11px;background:rgba(255,204,0,.04);
-  border:1px solid rgba(255,204,0,.15);border-radius:10px}
+/* ─── Volume bar ─────────────────────────────────────────────── */
+.volbar{
+  margin:8px 0 0;padding:9px 11px;
+  background:rgba(255,204,0,.04);border:1px solid rgba(255,204,0,.15);
+  border-radius:10px;
+}
 .voltop{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
 .vollbl{font-size:9px;color:#3a6a8f;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 .volpct{font-size:11px;font-weight:800;font-family:'JetBrains Mono',monospace}
@@ -303,26 +248,25 @@ body{
 .volfill{height:100%;border-radius:3px;transition:width .9s ease}
 .voltag{font-size:9px;font-weight:700}
 
-.gal-home{background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);
-  border-radius:14px;padding:12px;margin-top:14px;margin-bottom:10px}
-.gal-title{font-size:11px;font-weight:700;color:#ff4466;
-  text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;
-  animation:pulse 1.2s ease-in-out infinite}
-.gal-row{display:flex;align-items:center;justify-content:space-between;
-  padding:8px 10px;background:rgba(0,0,0,.3);border-radius:10px;
-  margin-bottom:6px;cursor:pointer;border:1px solid transparent}
-.gal-row:last-child{margin-bottom:0}
-.gal-teams{font-size:12px;font-weight:600;color:#e0f0ff;flex:1}
+/* ─── Live result box ─────────────────────────────────────────── */
+.lrbox{
+  background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);
+  border-radius:12px;padding:12px 14px;margin:12px 0 10px;
+}
+.lrt{font-size:10px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.lrs{font-size:32px;font-weight:900;font-family:'JetBrains Mono',monospace;text-align:center;margin-bottom:4px}
+.lrm{display:flex;justify-content:space-between;font-size:10px;color:var(--gray)}
+.levs{margin-top:8px;max-height:80px;overflow-y:auto}
+.ev{font-size:10px;color:var(--gray);padding:2px 0;border-bottom:1px solid #080f18}
+.ev:last-child{border-bottom:none}
+.ev.gol{color:var(--green);font-weight:700}
+.lra{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:10px;color:#2a5a7f}
+.adot{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:pulse 2s ease-in-out infinite;flex-shrink:0}
 
-.vlchip{font-size:9px;padding:2px 7px;border-radius:10px;background:rgba(0,0,0,.3);
-  border:1px solid transparent;white-space:nowrap}
-
-
-/* ═══ GOAL PRESSURE INDEX ═══════════════════════════════════════ */
+/* ─── GPI widget ──────────────────────────────────────────────── */
 .gpibox{
   margin:10px 0;padding:12px;border-radius:12px;
-  border:1px solid rgba(255,68,102,.2);
-  background:rgba(255,68,102,.05);
+  border:1px solid rgba(255,136,0,.2);background:rgba(255,136,0,.05);
 }
 .gpitop{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .gpitit{font-size:10px;font-weight:700;color:#ff8800;text-transform:uppercase;letter-spacing:.5px}
@@ -330,61 +274,84 @@ body{
 .gpitrack{height:6px;background:#0a1825;border-radius:3px;overflow:hidden;margin-bottom:5px}
 .gpifill{height:100%;border-radius:3px;transition:width 1s ease}
 .gpilvl{font-size:10px;font-weight:700;margin-bottom:6px}
-.gpifactors{display:flex;flex-direction:column;gap:3px;margin-top:6px;
-  padding-top:6px;border-top:1px solid #0a1825}
-.gpif{display:flex;justify-content:space-between;font-size:10px;color:#3a6a8f;
-  padding:2px 0}
+.gpifactors{display:flex;flex-direction:column;gap:3px;margin-top:6px;padding-top:6px;border-top:1px solid #0a1825}
+.gpif{display:flex;justify-content:space-between;font-size:10px;color:#3a6a8f;padding:2px 0}
 
-/* Alert banner animazione */
-@keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+/* ─── Stats grid ──────────────────────────────────────────────── */
+.sgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin:10px 0}
+.sbox{background:rgba(0,0,0,.3);border-radius:8px;padding:7px 10px}
+.sl{font-size:9px;color:#2a5a7f;margin-bottom:2px}
+.sv{font-size:13px;font-weight:800;font-family:'JetBrains Mono',monospace}
+.flags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.flag{font-size:10px;padding:2px 8px;border-radius:20px}
+.nota{font-size:11px;color:var(--gray);font-style:italic;border-left:2px solid #1a3a5a;padding-left:8px;margin-bottom:10px}
 
-/* ═══ ODDS / BETFAIR VOLUME ══════════════════════════════════════ */
-.odbox{background:rgba(0,0,0,.25);border:1px solid rgba(255,204,0,.2);
-  border-radius:12px;padding:12px 14px;margin-bottom:10px}
-.odtit{font-size:10px;font-weight:700;color:#ffcc00;text-transform:uppercase;
-  letter-spacing:1px;margin-bottom:10px}
-.odgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.oditem{background:rgba(0,0,0,.3);border-radius:8px;padding:8px;
-  border:1px solid #0e2035}
-.oditem.odon{border-color:rgba(255,204,0,.3)}
-.odlbl{font-size:9px;color:#2a5a7f;margin-bottom:3px}
-.odval{font-size:18px;font-weight:900;font-family:'JetBrains Mono',monospace}
-.odbar{height:3px;background:#0a1825;border-radius:2px;overflow:hidden;margin:4px 0}
-.odfill{height:100%;border-radius:2px}
-.odinfo{font-size:9px;font-weight:700;margin-top:2px}
+/* ─── Esiti ──────────────────────────────────────────────────── */
+.esbox{background:rgba(0,0,0,.2);border-radius:10px;padding:10px 12px;margin-top:6px}
+.estit{font-size:10px;color:#2a5a7f;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.esgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.esl{font-size:9px;color:#3a6a8f;margin-bottom:3px;text-align:center}
+.esbtns{display:flex;gap:2px}
+.ebtn{flex:1;padding:6px 0;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid #1a3a5a;background:transparent;color:#3a6a8f}
+.ebtn.sV{border-color:var(--green);background:rgba(0,204,102,.2);color:var(--green)}
+.ebtn.sP{border-color:var(--red);background:rgba(255,68,102,.2);color:var(--red)}
+.ebtn.sN{border-color:#556;background:rgba(80,100,120,.2);color:#556}
 
-/* Volume bar nella card */
-.volbar{margin:8px 0 0;padding:9px 11px;background:rgba(255,204,0,.04);
-  border:1px solid rgba(255,204,0,.15);border-radius:10px}
-.voltop{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
-.vollbl{font-size:9px;color:#3a6a8f;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-.volpct{font-size:11px;font-weight:800;font-family:'JetBrains Mono',monospace}
-.voltrack{height:5px;background:#0a1825;border-radius:3px;overflow:hidden;margin-bottom:4px}
-.volfill{height:100%;border-radius:3px;transition:width .9s ease}
-.voltag{font-size:9px;font-weight:700}
+/* ─── Empty / error ──────────────────────────────────────────── */
+.empty{text-align:center;padding:40px 16px}
+.emptyt{font-size:16px;font-weight:700;color:var(--blue);margin-bottom:8px}
+.emptyd{font-size:13px;color:#2a5a7f;line-height:1.7;margin-bottom:20px}
+.homebtn{padding:14px 28px;border-radius:12px;background:linear-gradient(135deg,#0044aa,#0088ff);border:1px solid #0066cc;color:white;font-size:14px;font-weight:700;cursor:pointer}
+.errbox{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.3);border-radius:14px;padding:20px;margin-bottom:16px;text-align:center}
+.errt{color:var(--red);font-weight:700;margin-bottom:6px;font-size:15px}
+.errm{color:#7a9bbf;font-size:12px;line-height:1.5}
 
-.gal-home{background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);
-  border-radius:14px;padding:12px;margin-top:14px;margin-bottom:10px}
-.gal-title{font-size:11px;font-weight:700;color:#ff4466;
-  text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;
-  animation:pulse 1.2s ease-in-out infinite}
-.gal-row{display:flex;align-items:center;justify-content:space-between;
-  padding:8px 10px;background:rgba(0,0,0,.3);border-radius:10px;
-  margin-bottom:6px;cursor:pointer;border:1px solid transparent}
-.gal-row:last-child{margin-bottom:0}
-.gal-teams{font-size:12px;font-weight:600;color:#e0f0ff;flex:1}
+/* ═══ STATS PAGE ════════════════════════════════════════════════ */
+.stsec{background:rgba(0,255,136,.05);border:1px solid rgba(0,255,136,.2);border-radius:14px;padding:16px;margin-bottom:14px}
+.sstit,.ssectit{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.sstit{color:var(--green)}
+.ssectit{color:var(--blue)}
+.stgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.stbox{background:rgba(0,0,0,.3);border-radius:10px;padding:10px 8px;text-align:center}
+.stn{font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace}
+.stl{font-size:10px;color:#2a5a7f}
+.sthr{font-size:24px;font-weight:900;font-family:'JetBrains Mono',monospace;text-align:center;margin-top:8px}
+.slbl{font-size:11px;color:#2a5a7f;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.smktg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.smkt{background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+.smktn{font-size:11px;font-weight:700;margin-bottom:5px}
+.smktr{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px}
+.smkth{font-size:18px;font-weight:900;font-family:'JetBrains Mono',monospace}
+.sfrow{display:flex;align-items:center;gap:8px;padding:9px 12px;background:rgba(0,0,0,.2);border-radius:10px;margin-bottom:6px}
 
-.vlchip{font-size:9px;padding:2px 7px;border-radius:10px;background:rgba(0,0,0,.3);
-  border:1px solid transparent;white-space:nowrap}
+/* ═══ SETTINGS ══════════════════════════════════════════════════ */
+.ssec{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px}
+.setrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #080f18}
+.setrow:last-child{border-bottom:none}
+.setlbl{flex:1;font-size:13px;color:var(--white)}
+.setval{font-size:12px;color:var(--blue);font-family:'JetBrains Mono',monospace}
+.ltrow{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #080f18}
+.ltrow:last-child{border-bottom:none}
+.tog{width:36px;height:20px;border-radius:10px;position:relative;cursor:pointer;transition:background .2s;border:none;flex-shrink:0}
+.ton{background:var(--green);box-shadow:0 0 8px rgba(0,255,136,.4)}
+.toff{background:#1e3a5f}
+.tog::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:white;transition:left .2s}
+.ton::after{left:19px}
 
+/* Export */
+.expbtn{width:100%;padding:13px;margin-top:12px;border-radius:12px;background:linear-gradient(135deg,#003a1a,#005a28);border:1px solid var(--green);color:var(--green);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.5px}
+
+/* ═══ ANIMATIONS ════════════════════════════════════════════════ */
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+::-webkit-scrollbar{width:0;height:0}
 </style>
 </head>
 <body>
 
-<!-- TOP BAR sticky -->
+<!-- TOP BAR -->
 <div id="topbar">
   <div class="tbrow1">
     <span class="logo">⚽ SCOUT OVER PRO</span>
@@ -394,16 +361,22 @@ body{
     </div>
   </div>
   <div class="keyrow">
-    <input type="text" id="keyinput" placeholder="API Key (api-football.com)..."
+    <input type="text" id="keyinput"
+      placeholder="API Key (api-football.com)..."
       autocomplete="off" autocorrect="off" spellcheck="false">
     <button class="savebtn" onclick="saveKey()">💾</button>
   </div>
   <button id="refreshbtn" onclick="fetchMatches()">🔄 AGGIORNA ORA</button>
+
+  <!-- Live bar -->
   <div id="livebar">
     <div class="lbrow">
       <div style="display:flex;align-items:center;gap:8px">
         <span class="dot" style="background:var(--red)"></span>
-        <div><div class="lbt">LIVE</div><div class="lbsub" id="lbsub">In attesa...</div></div>
+        <div>
+          <div class="lbt">LIVE</div>
+          <div class="lbsub" id="lbsub">In attesa...</div>
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <span id="lbcd"></span>
@@ -412,24 +385,26 @@ body{
     </div>
     <div id="lbres"></div>
   </div>
+
+  <!-- Log -->
   <div id="logbox"></div>
 </div>
 
-<!-- MAIN CONTENT — scorre normalmente con il body -->
+<!-- MAIN CONTENT -->
 <div id="main"></div>
 
-<!-- BOTTOM NAV fixed -->
+<!-- BOTTOM NAV -->
 <div id="botnav">
-  <button class="nb nba" data-page="home" onclick="nav('home')">
+  <button class="nb nba" data-page="home" onclick="goTo('home')">
     <span class="ni">🏠</span><span class="nl">Home</span>
   </button>
-  <button class="nb" data-page="analisi" onclick="nav('analisi')">
+  <button class="nb" data-page="analisi" onclick="goTo('analisi')">
     <span class="ni">📊</span><span class="nl">Analisi</span>
   </button>
-  <button class="nb" data-page="stats" onclick="nav('stats')">
+  <button class="nb" data-page="stats" onclick="goTo('stats')">
     <span class="ni">📈</span><span class="nl">Stats</span>
   </button>
-  <button class="nb" data-page="settings" onclick="nav('settings')">
+  <button class="nb" data-page="settings" onclick="goTo('settings')">
     <span class="ni">⚙️</span><span class="nl">Config</span>
   </button>
 </div>
