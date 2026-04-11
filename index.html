@@ -293,17 +293,48 @@ body{
 
 /* ═══ ANIMATIONS ══════════════════════════════════════════════════ */
 
-/* ═══ VOLUME SCOMMESSE ═══════════════════════════════════════════ */
-.volbar{margin:8px 0 0;padding:9px 11px;background:rgba(255,204,0,.04);
-  border:1px solid rgba(255,204,0,.15);border-radius:10px}
-.voltop{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
-.vollbl{font-size:9px;color:#3a6a8f;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-.volpct{font-size:11px;font-weight:800;font-family:'JetBrains Mono',monospace}
-.voltrack{height:5px;background:#0a1825;border-radius:3px;overflow:hidden;margin-bottom:4px}
-.volfill{height:100%;border-radius:3px;transition:width .9s ease}
-.voltag{font-size:9px;font-weight:700}
-.vlchip{font-size:9px;padding:2px 7px;border-radius:10px;background:rgba(0,0,0,.3);
-  border:1px solid transparent;white-space:nowrap}
+/* ═══ AGGIORNAMENTO & ARCHIVIO ══════════════════════════════════ */
+.aggbox{
+  background:rgba(0,170,255,.05);border:1px solid rgba(0,170,255,.2);
+  border-radius:14px;padding:14px;margin-bottom:14px;
+}
+.aggtit{font-size:11px;font-weight:700;color:#00aaff;
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.aggdesc{font-size:11px;color:#3a6a8f;line-height:1.6;margin-bottom:10px;}
+.aggbtn{
+  width:100%;padding:12px;border-radius:10px;
+  background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.4);
+  color:#00aaff;font-size:12px;font-weight:700;cursor:pointer;
+  font-family:'Outfit',sans-serif;
+}
+.aggbtn:disabled{opacity:.4;cursor:not-allowed;}
+.agginfo{font-size:10px;color:#1a4a7f;margin-top:8px;font-style:italic;}
+
+/* ═══ ANALISI 0-0 ════════════════════════════════════════════════ */
+.zero-box{
+  background:rgba(255,68,102,.06);border:1px solid rgba(255,68,102,.25);
+  border-radius:14px;padding:14px;margin-bottom:14px;
+}
+.zero-tit{font-size:11px;font-weight:700;color:#ff4466;
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+.zero-desc{font-size:10px;color:#3a6a8f;margin-bottom:10px;}
+.zero-row{
+  background:rgba(0,0,0,.3);border-radius:10px;padding:10px 12px;
+  margin-bottom:6px;border:1px solid rgba(255,68,102,.15);
+}
+.zero-match{font-size:12px;font-weight:700;color:#e0f0ff;margin-bottom:5px;}
+.zero-camp{font-size:10px;color:#3a6a8f;font-weight:400;}
+.zero-stats{display:flex;gap:10px;flex-wrap:wrap;}
+.zero-stats span{font-size:10px;color:#3a6a8f;}
+.zero-stats b{color:#ff8800;}
+
+/* ═══ SEZIONE AUTO-UPDATE INFO ══════════════════════════════════ */
+.api-usage{
+  background:rgba(255,204,0,.05);border:1px solid rgba(255,204,0,.2);
+  border-radius:10px;padding:10px 12px;margin-top:8px;
+  font-size:10px;color:#3a6a8f;line-height:1.7;
+}
+.api-usage b{color:#ffcc00;}
 
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}

@@ -20,7 +20,7 @@ const S={
   conf:'all',
   region:LS.get('region')||'all',
   autoOn:false,
-  autoSec:LS.get('autoSec')||60,
+  autoSec:LS.get('autoSec')||1800,
   countdown:0,
   dismissed:LS.get('dismissed')||false,
   leagues:null
@@ -323,62 +323,20 @@ function liveBox(fid,d,m){
 }
 
 function oddsBox(p,mkt){
-  // Mostra sezione volume per TUTTI e 3 i mercati
-  const od=S.odds[p.id];
-  const hasAny=od&&(od.ov05ht||od.ov05||od.ov15);
-  
-  if(!hasAny){
-    return`<div class="odbox">
-      <div class="odtit">💰 Volume Scommesse</div>
-      <div style="font-size:10px;color:#1a3a5a;text-align:center;padding:6px 0">
-        Dati odds non disponibili per questo campionato<br>
-        <span style="color:#2a5a7f">(piano free: copertura parziale)</span>
-      </div>
-    </div>`;
-  }
-
-  let h=`<div class="odbox"><div class="odtit">💰 Volume Scommesse & Flussi</div><div class="odgrid">`;
-  
-  const markets=[
-    {key:'ov05ht',label:'Over 0.5 PT',mktK:'pt'},
-    {key:'ov05',  label:'Over 0.5 FIN',mktK:'f05'},
-    {key:'ov15',  label:'Over 1.5 FIN',mktK:'f15'},
-  ];
-  
-  markets.forEach(({key,label,mktK})=>{
-    const om=od[key];
-    if(!om?.avg){
-      h+=`<div class="oditem">
-        <div class="odlbl">${label}</div>
-        <div class="odval" style="color:#1a3a5a">N/D</div>
-        <div class="odbar"><div class="odfill" style="width:0%"></div></div>
-        <div class="odinfo" style="color:#1a3a5a">—</div>
-      </div>`;
-      return;
-    }
-    const ip=Math.round(1/om.avg*100);
-    const col=ip>=70?'#00ff88':ip>=55?'#ffcc00':'#ff4466';
-    const sharp=om.open&&(om.open-om.avg)>0.08;
-    const lbl=ip>=70?'Volume Alto':ip>=60?'Vol. Medio':ip<45?'Bassa liq.':'Neutro';
-    const icon=sharp?'🎯':ip>=70?'💰':ip>=60?'📈':'🔘';
-    h+=`<div class="oditem${mkt===mktK?' odon':''}">
-      <div class="odlbl">${label}</div>
-      <div class="odval" style="color:${col}">${ip}%</div>
-      <div class="odbar"><div class="odfill" style="width:${Math.min(100,ip)}%;background:${col}"></div></div>
-      <div class="odinfo" style="color:${col}">${icon} ${lbl}</div>
-      <div style="font-size:9px;color:#2a5a7f;margin-top:2px">
-        Quota: <b style="color:#e0f0ff">${om.avg.toFixed(2)}</b>
-        ${sharp?`<span style="color:#ffd700;margin-left:4px">⬆ Sharp Money</span>`:''}
-      </div>
-    </div>`;
-  });
-  
-  h+=`</div>
-  <div style="font-size:9px;color:#1a3a5a;margin-top:8px;padding-top:6px;border-top:1px solid #0a1825">
-    Fonte: Bet365 · Probabilità implicita dalla quota · Sharp Money = quota scesa dall'apertura
-  </div>
+  const od=S.odds[p.id];if(!od)return'';
+  const om=mkt==='f15'?od.ov15:mkt==='f05'?od.ov05:od.ov05ht;
+  if(!om?.avg)return'';
+  const ip=Math.round(1/om.avg*100);
+  const col=ip>=70?'#00ff88':ip>=55?'#ffcc00':'#ff4466';
+  return`<div class="odbox">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+      <span style="font-size:10px;color:#3a6a8f">💰 Volume scommesse</span>
+      <span style="font-size:11px;font-weight:700;color:${col}">${ip}% consensus · q.${om.avg.toFixed(2)}</span>
+    </div>
+    <div style="height:5px;background:#0a1825;border-radius:3px;overflow:hidden">
+      <div style="width:${Math.min(100,ip)}%;height:100%;background:${col};border-radius:3px"></div>
+    </div>
   </div>`;
-  return h;
 }
 
 /* ── AUTO ───────────────────────────────────────────────────────── */
@@ -464,26 +422,14 @@ function saveKeySettings(){
   if(document.getElementById('keyinput'))document.getElementById('keyinput').value=k;
   alert('✅ API Key salvata!');renderPage();
 }
-function setAutoSec(s){S.autoSec=s;LS.set('autoSec',s);if(S.autoOn){stopAuto();startAuto();}renderPage();}
+function setAutoSec(s){
+  S.autoSec=s;LS.set('autoSec',s);
+  if(s===0){stopAuto();}else if(S.autoOn){stopAuto();startAuto();}
+  renderPage();
+}
 function toggleLeague(i){S.leagues[i].on=!S.leagues[i].on;LS.set('leagues',S.leagues);renderPage();}
 function clearEsiti(){if(!confirm('Cancellare tutto lo storico?'))return;S.esiti={};LS.set('esiti',{});renderPage();}
 function dismiss(){S.dismissed=true;LS.set('dismissed',true);renderPage();}
-function exportCSV(){
-  const rows=[['Data','Camp','Ora','Casa','Trasferta','Risultato','IPC_PT','HR_PT%','IPC_05F','HR_05F%','IPC_15F','HR_15F%','Esito_PT','Esito_05F','Esito_15F','Stato']];
-  const td=new Date().toLocaleDateString('it-IT');
-  S.matches.filter(m=>!m._loading).forEach(p=>{
-    const r=MKT_K.map(k=>ipc(p,k));
-    const d=S.live[p.id]||{};
-    const score=d.homeGoals!=null?`${d.homeGoals}:${d.awayGoals}`:'—';
-    rows.push([td,p.campionato,p.orario,p.casa,p.trasferta,score,
-      r[0].ipc,(r[0].hr*100).toFixed(1),r[1].ipc,(r[1].hr*100).toFixed(1),r[2].ipc,(r[2].hr*100).toFixed(1),
-      S.esiti[`${p.id}_pt`]||'',S.esiti[`${p.id}_f05`]||'',S.esiti[`${p.id}_f15`]||'',d.status||'NS']);
-  });
-  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['\uFEFF'+css],{type:'text/csv;charset=utf-8'}));
-  a.download=`Scout_${td.replace(/\//g,'-')}.csv`;a.click();
-}
 function exportCSV(){
   const rows=[['Data','Camp','Ora','Casa','Trasferta','Risultato','IPC_PT','HR_PT%','IPC_05F','HR_05F%','IPC_15F','HR_15F%','Esito_PT','Esito_05F','Esito_15F','Stato']];
   const td=new Date().toLocaleDateString('it-IT');
@@ -504,6 +450,176 @@ function exportCSV(){
 /* ══════════════════════════════════════════════════════════════════
    RENDER PRINCIPALE — un'unica funzione che aggiorna #main
    ══════════════════════════════════════════════════════════════════ */
+/* ── AGGIORNAMENTO RISULTATI FINE GIORNATA ───────────────────── */
+async function aggiornaRisultatiGiornata(){
+  if(!S.apiKey){alert('Inserisci prima la API Key!');return;}
+  const btn=document.getElementById('btn-aggiorna-esiti');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Aggiornamento...';}
+  
+  let aggiornate=0;
+  try{
+    // Recupera tutte le partite di oggi come fixtures concluse
+    const today=new Date().toISOString().split('T')[0];
+    const fd=await apiFetch('fixtures?date='+today+'&timezone=Europe/Rome&status=FT-AET-PEN');
+    const finished=(fd.response||[]);
+    
+    finished.forEach(function(f){
+      const fid=f.fixture&&f.fixture.id;
+      if(!fid)return;
+      const htH=f.score&&f.score.halftime&&f.score.halftime.home!=null?f.score.halftime.home:null;
+      const htA=f.score&&f.score.halftime&&f.score.halftime.away!=null?f.score.halftime.away:null;
+      const ftH=f.goals&&f.goals.home!=null?f.goals.home:null;
+      const ftA=f.goals&&f.goals.away!=null?f.goals.away:null;
+      if(ftH===null||ftA===null)return;
+      
+      const htG=(htH||0)+(htA||0);
+      const ftG=ftH+ftA;
+      const map={
+        pt:  htG>0?'V':'P',
+        f05: ftG>0?'V':'P',
+        f15: ftG>1?'V':'P'
+      };
+      
+      // Aggiorna live data
+      if(!S.live[fid])S.live[fid]={};
+      S.live[fid].homeGoals=ftH;S.live[fid].awayGoals=ftA;
+      S.live[fid].htHome=htH;S.live[fid].htAway=htA;
+      S.live[fid].status=f.fixture.status.short;
+      
+      // Imposta esiti per tutte le partite trovate (sovrascrivi solo quelli non impostati manualmente)
+      // Ma qui sovrascriviamo tutti per garantire correttezza
+      let found=false;
+      MKT_K.forEach(function(k){
+        const key=fid+'_'+k;
+        // Imposta solo se la partita è in S.matches (è di oggi)
+        const match=S.matches.find(function(m){return m.id===fid;});
+        if(!match)return;
+        S.esiti[key]=map[k];
+        found=true;
+      });
+      if(found)aggiornate++;
+    });
+    
+    if(aggiornate>0){
+      LS.set('esiti',S.esiti);
+      alert('✅ Aggiornati i risultati di '+aggiornate+' partite!\nOv 0.5 PT, Ov 0.5 FIN e Ov 1.5 FIN impostati automaticamente.');
+    }else{
+      alert('ℹ️ Nessuna partita conclusa trovata per oggi.\n(Le partite devono essere nello stato FT/AET/PEN)');
+    }
+  }catch(e){
+    alert('❌ Errore: '+e.message);
+  }
+  if(btn){btn.disabled=false;btn.textContent='🔄 Aggiorna tutti i risultati di oggi';}
+  renderPage();
+}
+
+/* ── ARCHIVIO PARTITE — GOOGLE SHEETS ──────────────────────────── */
+function esportaArchivio(){
+  if(!S.matches.length){
+    alert('Nessuna partita da esportare. Carica prima le partite del giorno.');
+    return;
+  }
+  
+  const today=new Date().toLocaleDateString('it-IT');
+  const todayISO=new Date().toISOString().split('T')[0];
+  
+  // Header arricchito per analisi 0-0
+  const header=[
+    'Data','Campionato','Paese','Ora',
+    'Casa','Trasferta',
+    'Ris_PT','Ris_FIN',           // es. "0:0" / "1:2"
+    'GolPT','GolFIN',             // numero gol
+    'Ov05PT','Ov05FIN','Ov15FIN', // V/P/N
+    'IPC_PT','HR_PT%',
+    'IPC_05F','HR_05F%',
+    'IPC_15F','HR_15F%',
+    'GolMedCasa','GolMedTrasf',   // media gol stagionale
+    'OvCasaPT%','OvTrasfPT%',     // statistiche storiche
+    'OvCasaFIN%','OvTrasfFIN%',
+    'H2H_PT%','H2H_05F%','H2H_15F%',
+    'TopAttacco','VetoForma',
+    'Nota_0_0',                    // campo libero per analisi
+    'Status'
+  ];
+  
+  const rows=[header];
+  
+  S.matches.filter(function(m){return !m._loading;}).forEach(function(p){
+    const r=MKT_K.map(function(k){return ipc(p,k);});
+    const d=S.live[p.id]||{};
+    
+    const ftH=d.homeGoals!=null?d.homeGoals:'';
+    const ftA=d.awayGoals!=null?d.awayGoals:'';
+    const htH=d.htHome!=null?d.htHome:'';
+    const htA=d.htAway!=null?d.htAway:'';
+    
+    const risPT=(htH!==''&&htA!=='')?htH+':'+htA:'';
+    const risFIN=(ftH!==''&&ftA!=='')?ftH+':'+ftA:'';
+    const golPT=(htH!==''&&htA!=='')?Number(htH)+Number(htA):'';
+    const golFIN=(ftH!==''&&ftA!=='')?Number(ftH)+Number(ftA):'';
+    
+    // Determina se è 0-0 (interessante per analisi)
+    const is00FIN=(golFIN===0);
+    const nota00=is00FIN?'0-0 FINALE — analizzare':'';
+    
+    rows.push([
+      today, p.campionato, p.country, p.orario,
+      p.casa, p.trasferta,
+      risPT, risFIN,
+      golPT, golFIN,
+      S.esiti[p.id+'_pt']||'', S.esiti[p.id+'_f05']||'', S.esiti[p.id+'_f15']||'',
+      r[0].ipc, (r[0].hr*100).toFixed(1),
+      r[1].ipc, (r[1].hr*100).toFixed(1),
+      r[2].ipc, (r[2].hr*100).toFixed(1),
+      p.mgf_c||'', p.mgf_t||'',
+      p.ov05pt_c||'', p.ov05pt_t||'',
+      p.ov05f_c||'', p.ov05f_t||'',
+      p.h2h_pt||'', p.h2h_f05||'', p.h2h_f15||'',
+      p.topAttacco?'SI':'NO', p.veto_forma?'SI':'NO',
+      nota00,
+      d.status||'NS'
+    ]);
+  });
+  
+  // Crea CSV con separatore ; (compatibile Excel/Google Sheets italiano)
+  const csv=rows.map(function(r){
+    return r.map(function(v){
+      return '"'+String(v===null||v===undefined?'':v).replace(/"/g,'""')+'"';
+    }).join(';');
+  }).join('\n');
+  
+  // Download CSV
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='ScoutOver_Archivio_'+todayISO+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  // Conta 0-0
+  const zero=S.matches.filter(function(m){
+    const d=S.live[m.id]||{};
+    return d.homeGoals===0&&d.awayGoals===0&&['FT','AET'].includes(d.status);
+  });
+  
+  setTimeout(function(){
+    alert(
+      '✅ Archivio esportato!\n\n'+
+      '📊 Partite totali: '+S.matches.filter(function(m){return !m._loading;}).length+'\n'+
+      (zero.length?'🔴 Partite 0-0 oggi: '+zero.length+'\n\n':'\n')+
+      'Come importare in Google Sheets:\n'+
+      '1. Apri Google Sheets (sheets.google.com)\n'+
+      '2. File → Importa → Carica il file CSV\n'+
+      '3. Separatore: punto e virgola (;)\n'+
+      '4. Aggiungi al foglio esistente per accumulare lo storico'
+    );
+  }, 500);
+}
+
+
 function renderPage(){
   const main=document.getElementById('main');
   if(!main)return;
@@ -624,19 +740,12 @@ function buildHome(){
 
 /* ── ANALISI ────────────────────────────────────────────────────── */
 function buildAnalisi(){
-  if(S.status==='idle'||(S.status==='loading'&&!S.matches.filter(m=>!m._loading).length)){
+  if(S.status==='idle'||S.status==='error'||(S.status==='loading'&&S.matches.filter(m=>!m._loading).length===0)){
     return`<div class="empty">
       <div style="font-size:48px;margin-bottom:16px">📊</div>
       <div class="emptyt">Nessun dato</div>
       <div class="emptyd">Vai alla Home e premi<br><b style="color:#00aaff">🔄 AGGIORNA ORA</b></div>
       <button class="homebtn" onclick="nav('home')">🏠 Vai alla Home</button>
-    </div>`;
-  }
-  if(S.status==='error'){
-    return`<div class="errbox">
-      <div style="font-size:28px;margin-bottom:8px">⚠️</div>
-      <div class="errt">Errore</div><div class="errm">${S.error}</div>
-      <button class="homebtn" style="margin-top:14px" onclick="nav('home')">🏠 Torna alla Home</button>
     </div>`;
   }
 
@@ -651,33 +760,39 @@ function buildAnalisi(){
     if(S.conf==='veto') return r.veto;
     return true;
   });
-  const alta=sorted.filter(p=>{const r=ipc(p,S.mkt);return !r.veto&&r.hr>=0.88;}).length;
-  const media=sorted.filter(p=>{const r=ipc(p,S.mkt);return !r.veto&&r.hr>=0.75&&r.hr<0.88;}).length;
+  const sum={
+    alta:sorted.filter(p=>{const r=ipc(p,S.mkt);return !r.veto&&r.hr>=0.88;}).length,
+    media:sorted.filter(p=>{const r=ipc(p,S.mkt);return !r.veto&&r.hr>=0.75&&r.hr<0.88;}).length,
+  };
 
   let h='';
 
   // Filtro regione
-  h+='<div class="chips">';
+  h+=`<div class="chips">`;
   Object.entries(REGIONS).forEach(([k,v])=>{
     const cnt=k==='all'?sorted.length:sorted.filter(m=>m.region===k).length;
-    if(!cnt&&k!=='all')return;
-    h+=`<button class="chip${S.region===k?' on':''}" onclick="setRegion('${k}')">${v.l} (${cnt})</button>`;
+    if(cnt===0&&k!=='all')return;
+    h+=`<button class="chip${S.region===k?' on':''}" onclick="setRegion('${k}')" style="${S.region===k?`--cc:${v.c}`:''}">
+      ${v.l} (${cnt})
+    </button>`;
   });
   h+='</div>';
 
   // Filtro mercato
-  h+='<div class="chips">';
+  h+=`<div class="chips">`;
   MKT_K.forEach((k,i)=>{
-    h+=`<button class="chip${S.mkt===k?' on':''}" onclick="setMkt('${k}')">${MKT_L[i]}</button>`;
+    h+=`<button class="chip${S.mkt===k?' on':''}" onclick="setMkt('${k}')" style="${S.mkt===k?`--cc:${MKT_C[i]}`:''}">
+      ${MKT_L[i]}
+    </button>`;
   });
   h+='</div>';
 
-  // Sommario
-  h+='<div class="sumrow">';
-  [['all','Tutte','#00aaff',sorted.length],['alta','Alta','#00ff88',alta],['media','Media','#ffcc00',media]].forEach(([k,l,c,n])=>{
-    const on=S.conf===k;
-    h+=`<div class="sumpill${on?' son':''}" onclick="setConf('${k}')" style="${on?'border-color:'+c+';background:'+c+'18':''}">
-      <div class="sumn" style="color:${c}">${n}</div><div class="suml">${l}</div>
+  // Sommario confidenza
+  h+=`<div class="sumrow">`;
+  [['all','Tutte','#00aaff',sorted.length],['alta','Alta','#00ff88',sum.alta],['media','Media','#ffcc00',sum.media]].forEach(([k,l,c,n])=>{
+    h+=`<div class="sumpill${S.conf===k?' son':''}" onclick="setConf('${k}')" style="${S.conf===k?`--cc:${c}`:''}">
+      <div class="sumn" style="color:${c}">${n}</div>
+      <div class="suml">${l}</div>
     </div>`;
   });
   h+='</div>';
@@ -688,34 +803,23 @@ function buildAnalisi(){
     const best=mkts.reduce((a,b)=>a.hr>b.hr?a:b);
     const rt=rtg(best.hr,best.veto);
     const d=S.live[p.id]||{};
-
-    // Calcola info volume per mercato corrente
-    const od=S.odds[p.id]||{};
-    const omCur=S.mkt==='f15'?od.ov15:S.mkt==='f05'?od.ov05:od.ov05ht;
-    const hasVol=omCur&&omCur.avg;
-    const ip=hasVol?Math.round(1/omCur.avg*100):null;
-    const vcol=ip?(ip>=70?'#00ff88':ip>=55?'#ffcc00':'#ff4466'):'#1a3a5a';
-    const sharp=omCur&&omCur.open&&(omCur.open-omCur.avg)>0.08;
-    const vlbl=sharp?'🎯 Sharp Money':ip>=70?'💰 Volume Alto':ip>=60?'📈 Vol. Medio':ip&&ip<45?'⚠️ Bassa liq.':'🔘 Neutro';
-
     h+=`<div class="card" style="background:${rt.bg};border:1px solid ${rt.br};animation-delay:${idx*.03}s">
-    <div class="chead" onclick="toggleCard(${p.id})">
-      <div class="cmeta">
-        <span class="ctag">${p.country} ${p.campionato}</span>
-        <span class="ctime">${p.orario}</span>
-        ${badge(p.id,d)}
-      </div>
-      <div class="cteams">
-        <span class="ct">${p.casa}</span>
-        <span class="cvs">VS</span>
-        <span class="ct" style="text-align:right">${p.trasferta}</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-        <span style="font-size:12px;font-weight:800;color:${rt.c}">${rt.l}${best.veto?'':' '+Math.round(best.hr*100)+'%'}</span>
-        ${best.vl?`<span class="vlchip" style="color:${best.vc};border-color:${best.vc}33">${best.vl}</span>`:''}
-      </div>
-      <div class="cmkts">`;
-
+      <div class="chead" onclick="toggleCard(${p.id})">
+        <div class="cmeta">
+          <span class="ctag">${p.country} ${p.campionato}</span>
+          <span class="ctime">${p.orario}</span>
+          ${badge(p.id,d)}
+        </div>
+        <div class="cteams">
+          <span class="ct">${p.casa}</span>
+          <span class="cvs">VS</span>
+          <span class="ct" style="text-align:right">${p.trasferta}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+          <span style="font-size:11px;font-weight:800;color:${rt.c}">${rt.l}${best.veto?'':' '+Math.round(best.hr*100)+'%'}</span>
+          ${best.vl?`<span style="font-size:9px;padding:2px 7px;border-radius:10px;background:#0a1825;color:${best.vc};border:1px solid ${best.vc}33">${best.vl}</span>`:''}
+        </div>
+        <div class="cmkts">`;
     MKT_K.forEach((k,i)=>{
       const r=ipc(p,k);
       const col=r.veto?'#334':r.hr>=0.88?MKT_C[i]:r.hr>=0.75?'#ffcc00':'#ff4466';
@@ -726,55 +830,36 @@ function buildAnalisi(){
           <span class="mkv" style="color:${col}">${r.veto?'✗':pct+'%'}</span>
         </div>
         <div class="bar"><div class="barf" style="width:${pct}%;background:${col}"></div></div>
+        ${r.vl?`<div style="font-size:8px;color:${r.vc};margin-top:1px">${r.vl}</div>`:''}
       </div>`;
     });
-
-    h+=`</div>`;
-
-    // ── BLOCCO VOLUME SCOMMESSE (sempre visibile nella card) ──
-    h+=`<div class="volbar" style="border-color:${hasVol?vcol+'44':'#0e2035'}">
-      <div class="voltop">
-        <span class="vollbl">💰 Volume Scommesse · ${MKT_L[MKT_K.indexOf(S.mkt)]}</span>
-        ${hasVol
-          ? `<span class="volpct" style="color:${vcol}">${ip}% · q.${omCur.avg.toFixed(2)}</span>`
-          : `<span style="font-size:9px;color:#1a3a5a">Dati non disp.</span>`}
-      </div>
-      ${hasVol?`
-      <div class="voltrack">
-        <div class="volfill" style="width:${Math.min(100,ip)}%;background:${vcol}"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px">
-        <span class="voltag" style="color:${vcol}">${vlbl}${sharp?' · <b style="color:#ffd700">quota scesa dall apertura</b>':''}</span>
-        <span style="font-size:9px;color:#2a5a7f">Bet365</span>
-      </div>`:'<div style="font-size:9px;color:#1a3a5a;padding:4px 0">Attiva più campionati o piano a pagamento per le odds</div>'}
-    </div>`;
-
     h+=`</div>
-    <div class="detail" id="det-${p.id}">
-      ${liveBox(p.id,d,p)}
-      ${oddsBox(p,S.mkt)}
-      <div class="sgrid">
-        ${[['PT Casa',p.ov05pt_c+'%',p.ov05pt_c>=75],['PT Trasf.',p.ov05pt_t+'%',p.ov05pt_t>=70],
-           ['Gol PT',+(p.mgpt_c+p.mgpt_t).toFixed(2),(p.mgpt_c+p.mgpt_t)>=1.4],
-           ['H2H PT',p.h2h_pt+'%',p.h2h_pt>=65],
-           ['Gol FIN',+(p.mgf_c+p.mgf_t).toFixed(2),(p.mgf_c+p.mgf_t)>=2.5],
-           ['H2H 1.5F',p.h2h_f15+'%',p.h2h_f15>=58]
-          ].map(([l,v,ok])=>`<div class="sbox"><div class="sl">${l}</div><div class="sv" style="color:${ok?'#00cc66':'#ff6688'}">${v}</div></div>`).join('')}
       </div>
-      <div class="flags">
-        ${p.topAttacco?'<span class="flag" style="color:#00cc66;background:rgba(0,204,102,.1)">⚡ Top Att.</span>':''}
-        ${p.veto_forma?'<span class="flag" style="color:#ff4466;background:rgba(255,68,102,.1)">🚫 Veto Forma</span>':''}
+      <div class="detail" id="det-${p.id}">
+        ${liveBox(p.id,d,p)}
+        ${oddsBox(p,S.mkt)}
+        <div class="sgrid">
+          ${[['PT Casa',p.ov05pt_c+'%',p.ov05pt_c>=75],['PT Trasf.',p.ov05pt_t+'%',p.ov05pt_t>=70],
+             ['Gol PT',+(p.mgpt_c+p.mgpt_t).toFixed(2),(p.mgpt_c+p.mgpt_t)>=1.4],
+             ['H2H PT',p.h2h_pt+'%',p.h2h_pt>=65],
+             ['Gol FIN',+(p.mgf_c+p.mgf_t).toFixed(2),(p.mgf_c+p.mgf_t)>=2.5],
+             ['H2H 1.5F',p.h2h_f15+'%',p.h2h_f15>=58]
+            ].map(([l,v,ok])=>`<div class="sbox"><div class="sl">${l}</div><div class="sv" style="color:${ok?'#00cc66':'#ff6688'}">${v}</div></div>`).join('')}
+        </div>
+        <div class="flags">
+          ${p.topAttacco?'<span class="flag" style="color:#00cc66;background:rgba(0,204,102,.1)">⚡ Top Att.</span>':''}
+          ${p.veto_forma?'<span class="flag" style="color:#ff4466;background:rgba(255,68,102,.1)">🚫 Veto</span>':''}
+        </div>
+        <div class="nota">${p.nota}</div>
+        <div class="esbox">
+          <div class="estit">📝 Esito reale (auto a fine partita)</div>
+          <div class="esgrid">${MKT_K.map((k,i)=>`<div>
+            <div class="esl">${MKT_L[i]}</div>
+            <div class="esbtns">${['V','P','N'].map(v=>`<button id="eb-${p.id}-${k}-${v}" class="ebtn${S.esiti[`${p.id}_${k}`]===v?' s'+v:''}" onclick="setEsito(${p.id},'${k}','${v}')">${v}</button>`).join('')}</div>
+          </div>`).join('')}</div>
+        </div>
       </div>
-      <div class="nota">${p.nota}</div>
-      <div class="esbox">
-        <div class="estit">📝 Esito reale (auto a fine partita)</div>
-        <div class="esgrid">${MKT_K.map((k,i)=>`<div>
-          <div class="esl">${MKT_L[i]}</div>
-          <div class="esbtns">${['V','P','N'].map(v=>`<button id="eb-${p.id}-${k}-${v}" class="ebtn${S.esiti[`${p.id}_${k}`]===v?' s'+v:''}" onclick="setEsito(${p.id},'${k}','${v}')">${v}</button>`).join('')}</div>
-        </div>`).join('')}</div>
-      </div>
-    </div>
-    <div class="chev" id="chv-${p.id}" onclick="toggleCard(${p.id})">▼</div>
+      <div class="chev" id="chv-${p.id}" onclick="toggleCard(${p.id})">▼</div>
     </div>`;
   });
 
@@ -783,6 +868,7 @@ function buildAnalisi(){
   return h;
 }
 
+/* ── STATS ──────────────────────────────────────────────────────── */
 function buildStats(){
   const st={pt:{V:0,P:0,N:0},f05:{V:0,P:0,N:0},f15:{V:0,P:0,N:0}};
   const cf={alta:{V:0,P:0},media:{V:0,P:0},bassa:{V:0,P:0}};
@@ -823,7 +909,7 @@ function buildStats(){
   });
 
   h+=`</div><div class="slbl">Per Fascia</div>`;
-  [['🟢 Alta ≥88%','alta','#00ff88'],['🟡 Media 75-87%','media','#ffcc00'],['🔴 Bassa <75%','bassa','#ff4466']].forEach(([l,k,c])=>{
+  [['🟢 Alta ≥88%','alta','#00ff88'],['🟡 Media 75-87%','media','#ffcc00']].forEach(([l,k,c])=>{
     const s=cf[k];const g=s.V+s.P;const hr=g>0?(s.V/g*100).toFixed(1):null;
     h+=`<div class="sfrow" style="border:1px solid ${c}22">
       <span style="flex:1;font-size:12px;color:${c}">${l}</span>
@@ -833,6 +919,46 @@ function buildStats(){
     </div>`;
   });
 
+
+
+  // Sezione analisi partite 0-0 di oggi
+  const oggi00=S.matches.filter(function(m){
+    const d=S.live[m.id]||{};
+    return d.homeGoals===0&&d.awayGoals===0&&['FT','AET','PEN'].includes(d.status);
+  });
+  if(oggi00.length>0){
+    h+='<div class="zero-box">';
+    h+='<div class="zero-tit">🔴 Partite 0-0 di Oggi ('+oggi00.length+')</div>';
+    h+='<div class="zero-desc">Analizza queste partite per trovare pattern e migliorare la selezione</div>';
+    oggi00.forEach(function(m){
+      const r_pt=ipc(m,'pt'),r_f05=ipc(m,'f05'),r_f15=ipc(m,'f15');
+      h+='<div class="zero-row">';
+      h+='<div class="zero-match">'+m.casa+' vs '+m.trasferta+'<span class="zero-camp"> · '+m.campionato+'</span></div>';
+      h+='<div class="zero-stats">';
+      h+='<span>IPC PT: <b>'+r_pt.ipc+'</b></span>';
+      h+='<span>HR: <b>'+(r_pt.hr*100).toFixed(0)+'%</b></span>';
+      h+='<span>Gol/g: <b>'+((m.mgf_c||0)+(m.mgf_t||0)).toFixed(1)+'</b></span>';
+      h+='<span>H2H PT: <b>'+(m.h2h_pt||0)+'%</b></span>';
+      h+='</div></div>';
+    });
+    h+='</div>';
+  }
+  
+  // Box aggiornamento risultati fine giornata
+  h+='<div class="aggbox">';
+  h+='<div class="aggtit">📅 Aggiornamento Risultati Fine Giornata</div>';
+  h+='<div class="aggdesc">Imposta automaticamente tutti gli esiti V/P di oggi per tutti e 3 i mercati (Ov 0.5 PT, Ov 0.5 FIN, Ov 1.5 FIN) recuperando i risultati finali da API-Football.</div>';
+  h+='<button id="btn-aggiorna-esiti" onclick="aggiornaRisultatiGiornata()" class="aggbtn">🔄 Aggiorna tutti i risultati di oggi</button>';
+  h+='<div class="agginfo">⚠️ Usa 1 richiesta API. Sovrascrive gli esiti già impostati.</div>';
+  h+='</div>';
+  
+  // Box archivio Google Sheets  
+  h+='<div class="aggbox" style="border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.05)">';
+  h+='<div class="aggtit" style="color:#00ff88">📊 Archivio Google Sheets</div>';
+  h+='<div class="aggdesc">Esporta tutte le partite in un CSV da importare su Google Sheets. Include dati per analisi pattern sulle partite 0-0 (sempre perdenti).</div>';
+  h+='<button onclick="esportaArchivio()" class="aggbtn" style="border-color:#00ff88;color:#00ff88;background:rgba(0,255,136,.08)">📥 Esporta CSV per Google Sheets</button>';
+  h+='<div class="agginfo">Le partite 0-0 vengono evidenziate automaticamente nel CSV</div>';
+  h+='</div';
   return h;
 }
 
@@ -862,7 +988,7 @@ function buildSettings(){
     <div class="ssectit">⏱️ Aggiornamento Automatico</div>
     <div class="setrow"><div class="setlbl">Stato</div><div class="setval" style="color:${S.autoOn?'#00ff88':'#556'}">${S.autoOn?'🔴 LIVE':'⚫ OFF'}</div></div>
     <div style="display:flex;gap:6px;margin-top:10px">
-      ${[30,60,120,300].map(s=>`<button onclick="setAutoSec(${s})" style="flex:1;padding:9px 0;border-radius:8px;background:${S.autoSec===s?'rgba(0,170,255,.2)':'rgba(255,255,255,.03)'};border:1px solid ${S.autoSec===s?'#00aaff':'#1a3a5a'};color:${S.autoSec===s?'#00aaff':'#3a6a8f'};font-size:11px;cursor:pointer;font-weight:${S.autoSec===s?700:400}">${s<60?s+'s':s/60+'m'}</button>`).join('')}
+      ${[[1800,"30m"],[3600,"1h"],[7200,"2h"],[0,"Off"]].map(s=>`<button onclick="setAutoSec(${s})" style="flex:1;padding:9px 0;border-radius:8px;background:${S.autoSec===s?'rgba(0,170,255,.2)':'rgba(255,255,255,.03)'};border:1px solid ${S.autoSec===s?'#00aaff':'#1a3a5a'};color:${S.autoSec===s?'#00aaff':'#3a6a8f'};font-size:11px;cursor:pointer;font-weight:${S.autoSec===s?700:400}">${s<60?s+'s':s/60+'m'}</button>`).join('')}
     </div>
     <div style="font-size:10px;color:#2a5a7f;margin-top:8px;line-height:1.5">ℹ️ 1 sola richiesta API per ciclo. Esiti V/P auto a fine partita.</div>
   </div>
