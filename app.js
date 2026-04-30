@@ -102,9 +102,9 @@ const ALL_LEAGUES=[
   {id:323,n:'UAE Pro League', f:'🇦🇪',r:'asia',    s:2025,on:false},
 ];
 
-const MKT_L=['Ov 0.5 PT','Ov 0.5 FIN','Ov 1.5 FIN'];
-const MKT_K=['pt','f05','f15'];
-const MKT_C=['#00aaff','#00cc66','#ffcc00'];
+const MKT_L=['Ov 0.5 PT','Ov 1.5 FIN'];
+const MKT_K=['pt','f15'];
+const MKT_C=['#00aaff','#ffcc00'];
 
 /* ── IPC ────────────────────────────────────────────────────────── */
 function ipc(p,mkt){
@@ -115,6 +115,8 @@ function ipc(p,mkt){
   else               [ovc,ovt,mgc,mgt,h2h,sc,st,smg,sh]=[p.ov15f_c,p.ov15f_t,p.mgf_c,p.mgf_t,p.h2h_f15,72,68,2.5,58];
   let v=0.2*mgc+0.2*mgt+0.25*(ovc/100)+0.25*(ovt/100)+0.05*(h2h/100);
   v+=[p.topAttacco,(mgc+mgt)>=1.2,p.derby,p.motivazioni].filter(Boolean).length*0.03;
+  // Bonus favorita in casa: squadra forte che gioca davanti al pubblico di casa
+  if(p.isFavoriteHome) v+=0.05;
   let vb=0,vl=null,vc='#3a6a8f';
   const od=S.odds[p.id];
   if(od){
@@ -130,7 +132,16 @@ function ipc(p,mkt){
     }
   }
   const fok=ovc>=sc&&ovt>=st&&(mgc+mgt)>=smg&&h2h>=sh;
-  const hr=Math.min(0.97,0.5+v*0.55+(fok?0.05:0));
+
+  // Penalità: entrambe le squadre poco prolifiche
+  let penalty=0;
+  if(mgc<1.0&&mgt<1.0)      penalty=0.06;  // entrambe scarsissime
+  else if(mgc<1.1&&mgt<1.1) penalty=0.03;  // entrambe sotto la media
+
+  // Penalità: H2H molto basso (le due squadre si sono spesso bloccate)
+  if(h2h<45) penalty+=0.04;
+
+  const hr=Math.min(0.97, 0.5+v*0.55+(fok?0.05:0)-penalty);
   return{ipc:+v.toFixed(3),hr:+hr.toFixed(3),fok,veto:false,vl,vc};
 }
 
@@ -158,6 +169,27 @@ function mkStats(hs,as_,h2h){
   const gA=parseFloat(as_?.goals?.for?.average?.total)||1.35;
   const mgf_c=+gH.toFixed(2),mgf_t=+gA.toFixed(2);
   const mgpt_c=+(gH*.44).toFixed(2),mgpt_t=+(gA*.44).toFixed(2);
+
+  // Win% in casa (squadra di casa nelle partite giocate in casa)
+  const homeW=parseInt(hs?.fixtures?.wins?.home)||0;
+  const homeD=parseInt(hs?.fixtures?.draws?.home)||0;
+  const homeL=parseInt(hs?.fixtures?.loses?.home)||0;
+  const homeTot=homeW+homeD+homeL||1;
+  const homeWinPct=Math.round(homeW/homeTot*100);       // % vittorie in casa
+  const homeStrength=+(gH-(parseFloat(hs?.goals?.against?.average?.home)||1.2)).toFixed(2); // gol fatti - subiti in casa
+
+  // Win% in trasferta (squadra ospite)
+  const awayW=parseInt(as_?.fixtures?.wins?.away)||0;
+  const awayD=parseInt(as_?.fixtures?.draws?.away)||0;
+  const awayL=parseInt(as_?.fixtures?.loses?.away)||0;
+  const awayTot=awayW+awayD+awayL||1;
+  const awayWinPct=Math.round(awayW/awayTot*100);       // % vittorie in trasferta
+  const awayStrength=+(gA-(parseFloat(as_?.goals?.against?.average?.away)||1.4)).toFixed(2);
+
+  // Favorita in casa: la squadra di casa ha forza nettamente superiore
+  // homeStrength > awayStrength + 0.3  →  casa chiaramente favorita
+  const isFavoriteHome = homeStrength > awayStrength + 0.3 && homeWinPct >= 45;
+
   let h2h_pt=62,h2h_f05=72,h2h_f15=60;
   if(h2h?.length){
     const n=h2h.length;
@@ -169,7 +201,8 @@ function mkStats(hs,as_,h2h){
     ov05pt_c:pOv(mgpt_c),ov05pt_t:pOv(mgpt_t),
     ov05f_c:pOv(mgf_c),ov05f_t:pOv(mgf_t),
     ov15f_c:pOv(mgf_c*.72),ov15f_t:pOv(mgf_t*.72),
-    h2h_pt,h2h_f05,h2h_f15};
+    h2h_pt,h2h_f05,h2h_f15,
+    homeWinPct,awayWinPct,homeStrength,awayStrength,isFavoriteHome};
 }
 
 async function fetchOdds(fid){
@@ -314,7 +347,36 @@ async function liveUpdate(){
     }
     const el=document.getElementById('lbsub');
     if(el)el.textContent='Agg. '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  autoSetEsitiFinite();
   }catch(e){console.warn(e);}
+}
+
+/* Imposta esiti automatici per partite FT senza esito ancora */
+function autoSetEsitiFinite(){
+  let changed=false;
+  S.matches.forEach(function(m){
+    const d=S.live[m.id];
+    if(!d||!['FT','AET','PEN'].includes(d.status))return;
+    const htG=(d.htHome||0)+(d.htAway||0);
+    const ftG=(d.homeGoals||0)+(d.awayGoals||0);
+    const map={pt:htG>0?'V':'P',f15:ftG>1?'V':'P'};
+    MKT_K.forEach(function(k){
+      const key=m.id+'_'+k;
+      if(S.esiti[key]===undefined){S.esiti[key]=map[k];changed=true;}
+    });
+  });
+  if(changed){
+    LS.set('esiti',S.esiti);
+    S.matches.forEach(function(m){
+      MKT_K.forEach(function(k){
+        ['V','P','N'].forEach(function(v){
+          const b=document.getElementById('eb-'+m.id+'-'+k+'-'+v);
+          if(b)b.className='ebtn'+(S.esiti[m.id+'_'+k]===v?' s'+v:'');
+        });
+      });
+    });
+    if(S.page==='stats')renderPage();
+  }
 }
 
 function autoEsiti(fid,d){
@@ -497,10 +559,13 @@ async function aggiornaRisultatiGiornata(){
   try{
     // Recupera tutte le partite di oggi come fixtures concluse
     const today=new Date().toISOString().split('T')[0];
-    const fd=await apiFetch('fixtures?date='+today+'&timezone=Europe/Rome&status=FT-AET-PEN');
+    const fd=await apiFetch('fixtures?date='+today+'&timezone=Europe/Rome');
     const finished=(fd.response||[]);
     
-    finished.forEach(function(f){
+    finished.filter(function(f){
+        const st=f.fixture&&f.fixture.status&&f.fixture.status.short;
+        return ['FT','AET','PEN'].includes(st);
+      }).forEach(function(f){
       const fid=f.fixture&&f.fixture.id;
       if(!fid)return;
       const htH=f.score&&f.score.halftime&&f.score.halftime.home!=null?f.score.halftime.home:null;
@@ -788,18 +853,25 @@ function buildAnalisi(){
 
   const showR=S.region==='all'?null:S.region;
   const analizzate=S.matches.filter(m=>!m._loading&&(!showR||m.region===showR));
-  const sorted=[...analizzate].sort((a,b)=>ipc(b,S.mkt).hr-ipc(a,S.mkt).hr);
+  const sorted=[...analizzate].sort((a,b)=>{
+    const ra=ipc(a,S.mkt), rb=ipc(b,S.mkt);
+    // Prima le non-veto; a parità, favorita in casa prima; a parità, HR più alto
+    if(ra.veto!==rb.veto) return ra.veto?1:-1;
+    const favA=a.isFavoriteHome?0.015:0;
+    const favB=b.isFavoriteHome?0.015:0;
+    return (rb.hr+favB)-(ra.hr+favA);
+  });
   const filt=sorted.filter(p=>{
     const r=ipc(p,S.mkt);
-    if(S.conf==='alta') return !r.veto&&r.hr>=0.88;
-    if(S.conf==='media')return !r.veto&&r.hr>=0.75&&r.hr<0.88;
-    if(S.conf==='bassa')return !r.veto&&r.hr<0.75;
+    if(S.conf==='alta') return !r.veto&&r.hr>=0.85;
+    if(S.conf==='media')return !r.veto&&r.hr>=0.75&&r.hr<0.85;
     if(S.conf==='veto') return r.veto;
-    return true;
+    // "Tutte": mostra solo partite con almeno un segnale valido (hr >= 0.68)
+    return !r.veto&&r.hr>=0.68;
   });
   const sum={
-    alta:sorted.filter(p=>{const r=ipc(p,S.mkt);return !r.veto&&r.hr>=0.88;}).length,
-    media:sorted.filter(p=>{const r=ipc(p,S.mkt);return !r.veto&&r.hr>=0.75&&r.hr<0.88;}).length,
+    alta: sorted.filter(p=>{const r=ipc(p,S.mkt);return !r.veto&&r.hr>=0.85;}).length,
+    media:sorted.filter(p=>{const r=ipc(p,S.mkt);return !r.veto&&r.hr>=0.75&&r.hr<0.85;}).length,
   };
 
   let h='';
@@ -854,8 +926,7 @@ function buildAnalisi(){
         </div>
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
           <span style="font-size:11px;font-weight:800;color:${rt.c}">${rt.l}${best.veto?'':' '+Math.round(best.hr*100)+'%'}</span>
-          ${best.vl?`<span style="font-size:9px;padding:2px 7px;border-radius:10px;background:#0a1825;color:${best.vc};border:1px solid ${best.vc}33">${best.vl}</span>`:''}
-        </div>
+          ${p.isFavoriteHome?'<span style="font-size:9px;padding:2px 7px;border-radius:10px;background:rgba(0,170,255,.12);border:1px solid rgba(0,170,255,.3);color:#00aaff">🏠 Fav. casa</span>':''}${best.vl?`<span style="font-size:9px;padding:2px 7px;border-radius:10px;background:#0a1825;color:${best.vc};border:1px solid ${best.vc}33">${best.vl}</span>`:''}\n        </div>
         <div class="cmkts">`;
     MKT_K.forEach((k,i)=>{
       const r=ipc(p,k);
@@ -876,11 +947,14 @@ function buildAnalisi(){
         ${liveBox(p.id,d,p)}
         ${oddsBox(p,S.mkt)}
         <div class="sgrid">
-          ${[['PT Casa',p.ov05pt_c+'%',p.ov05pt_c>=75],['PT Trasf.',p.ov05pt_t+'%',p.ov05pt_t>=70],
+          ${[['PT Casa',p.ov05pt_c+'%',p.ov05pt_c>=75],
+             ['PT Trasf.',p.ov05pt_t+'%',p.ov05pt_t>=70],
              ['Gol PT',+(p.mgpt_c+p.mgpt_t).toFixed(2),(p.mgpt_c+p.mgpt_t)>=1.4],
              ['H2H PT',p.h2h_pt+'%',p.h2h_pt>=65],
              ['Gol FIN',+(p.mgf_c+p.mgf_t).toFixed(2),(p.mgf_c+p.mgf_t)>=2.5],
-             ['H2H 1.5F',p.h2h_f15+'%',p.h2h_f15>=58]
+             ['H2H 1.5F',p.h2h_f15+'%',p.h2h_f15>=58],
+             ['Win% Casa',(p.homeWinPct||0)+'%',(p.homeWinPct||0)>=50],
+             ['Win% Trasf.',(p.awayWinPct||0)+'%',(p.awayWinPct||0)<=30]
             ].map(([l,v,ok])=>`<div class="sbox"><div class="sl">${l}</div><div class="sv" style="color:${ok?'#00cc66':'#ff6688'}">${v}</div></div>`).join('')}
         </div>
         <div class="flags">
