@@ -20,7 +20,7 @@ const S={
   conf:'all',
   region:LS.get('region')||'all',
   autoOn:false,
-  autoSec:LS.get('autoSec')||1800,
+  autoSec:LS.get('autoSec')||60,
   countdown:0,
   dismissed:LS.get('dismissed')||false,
   leagues:null
@@ -36,75 +36,38 @@ const REGIONS={
 };
 
 const ALL_LEAGUES=[
-  // ── ITALIA ──
-  {id:135,n:'Serie A',        f:'🇮🇹',r:'europe',  s:2025,on:true},
-  {id:136,n:'Serie B',        f:'🇮🇹',r:'europe',  s:2025,on:true},
-  {id:137,n:'Serie C Grp A',  f:'🇮🇹',r:'europe',  s:2025,on:false},
-  {id:138,n:'Serie C Grp B',  f:'🇮🇹',r:'europe',  s:2025,on:false},
-  {id:139,n:'Serie C Grp C',  f:'🇮🇹',r:'europe',  s:2025,on:false},
-  {id:57, n:'Coppa Italia',   f:'🇮🇹',r:'europe',  s:2025,on:false},
-  // ── SPAGNA ──
-  {id:140,n:'La Liga',        f:'🇪🇸',r:'europe',  s:2025,on:true},
-  {id:141,n:'La Liga 2',      f:'🇪🇸',r:'europe',  s:2025,on:true},
-  {id:142,n:'Segunda B (RF)', f:'🇪🇸',r:'europe',  s:2025,on:false},
-  {id:143,n:'Tercera Division',f:'🇪🇸',r:'europe', s:2025,on:false},
-  {id:556,n:'Copa del Rey',   f:'🇪🇸',r:'europe',  s:2025,on:true},
-  {id:560,n:'Supercopa ES',   f:'🇪🇸',r:'europe',  s:2025,on:false},
-  // ── UK & IRLANDA ──
-  {id:39, n:'Premier League', f:'🏴',r:'uk',       s:2025,on:true},
-  {id:40, n:'Championship',   f:'🏴',r:'uk',       s:2025,on:true},
-  {id:41, n:'League One',     f:'🏴',r:'uk',       s:2025,on:true},
-  {id:42, n:'League Two',     f:'🏴',r:'uk',       s:2025,on:true},
-  {id:43, n:'National League',f:'🏴',r:'uk',       s:2025,on:false},
-  {id:45, n:'FA Cup',         f:'🏴',r:'uk',       s:2025,on:true},
-  {id:46, n:'League Cup',     f:'🏴',r:'uk',       s:2025,on:false},
-  {id:48, n:'EFL Trophy',     f:'🏴',r:'uk',       s:2025,on:false},
-  {id:179,n:'Scottish Prem.', f:'🏴',r:'uk',       s:2025,on:true},
-  {id:180,n:'Scottish Champ.',f:'🏴',r:'uk',       s:2025,on:false},
-  {id:181,n:'Scottish Lge 1', f:'🏴',r:'uk',       s:2025,on:false},
-  {id:182,n:'Scottish Lge 2', f:'🏴',r:'uk',       s:2025,on:false},
-  {id:183,n:'Scottish FA Cup',f:'🏴',r:'uk',       s:2025,on:false},
-  {id:357,n:'Lge of Ireland', f:'🇮🇪',r:'uk',      s:2025,on:false},
-  {id:358,n:'FAI Cup',        f:'🇮🇪',r:'uk',      s:2025,on:false},
-  // ── RESTO EUROPA ──
-  {id:78, n:'Bundesliga',     f:'🇩🇪',r:'europe',  s:2025,on:true},
-  {id:79, n:'Bundesliga 2',   f:'🇩🇪',r:'europe',  s:2025,on:true},
-  {id:61, n:'Ligue 1',        f:'🇫🇷',r:'europe',  s:2025,on:true},
-  {id:62, n:'Ligue 2',        f:'🇫🇷',r:'europe',  s:2025,on:false},
-  {id:88, n:'Eredivisie',     f:'🇳🇱',r:'europe',  s:2025,on:true},
-  {id:94, n:'Liga Portugal',  f:'🇵🇹',r:'europe',  s:2025,on:true},
-  {id:95, n:'Liga Portugal 2',f:'🇵🇹',r:'europe',  s:2025,on:false},
-  {id:144,n:'Jupiler Pro',    f:'🇧🇪',r:'europe',  s:2025,on:true},
-  {id:203,n:'Super Lig TR',   f:'🇹🇷',r:'europe',  s:2025,on:true},
-  {id:113,n:'Allsvenskan',    f:'🇸🇪',r:'europe',  s:2025,on:false},
-  {id:119,n:'Superliga DK',   f:'🇩🇰',r:'europe',  s:2025,on:false},
-  {id:103,n:'Eliteserien NO', f:'🇳🇴',r:'europe',  s:2025,on:false},
-  {id:106,n:'Ekstraklasa PL', f:'🇵🇱',r:'europe',  s:2025,on:false},
-  {id:235,n:'Premier Liga RU',f:'🇷🇺',r:'europe',  s:2025,on:false},
-  {id:197,n:'Super League GR',f:'🇬🇷',r:'europe',  s:2025,on:false},
-  {id:218,n:'Bundesliga AT',  f:'🇦🇹',r:'europe',  s:2025,on:false},
-  // ── COPPE EUROPEE ──
-  {id:2,  n:'Champions Lge',  f:'🇪🇺',r:'europe',  s:2025,on:true},
-  {id:3,  n:'Europa League',  f:'🇪🇺',r:'europe',  s:2025,on:true},
-  {id:848,n:'Conference Lge', f:'🇪🇺',r:'europe',  s:2025,on:true},
-  // ── AMERICHE ──
-  {id:71, n:'Brasileirao A',  f:'🇧🇷',r:'americas',s:2025,on:true},
-  {id:72, n:'Brasileirao B',  f:'🇧🇷',r:'americas',s:2025,on:false},
-  {id:128,n:'Liga Argentina', f:'🇦🇷',r:'americas',s:2025,on:true},
-  {id:130,n:'Liga MX',        f:'🇲🇽',r:'americas',s:2025,on:true},
-  {id:253,n:'MLS',            f:'🇺🇸',r:'americas',s:2025,on:true},
-  {id:265,n:'Libertadores',   f:'🌎',r:'americas', s:2025,on:false},
-  {id:266,n:'Sudamericana',   f:'🌎',r:'americas', s:2025,on:false},
-  // ── ASIA ──
-  {id:98, n:'J-League',       f:'🇯🇵',r:'asia',    s:2025,on:true},
-  {id:292,n:'K-League',       f:'🇰🇷',r:'asia',    s:2025,on:true},
-  {id:307,n:'Saudi Pro Lge',  f:'🇸🇦',r:'asia',    s:2025,on:true},
-  {id:323,n:'UAE Pro League', f:'🇦🇪',r:'asia',    s:2025,on:false},
+  {id:135,n:'Serie A',f:'🇮🇹',r:'europe',s:2025,on:true},
+  {id:136,n:'Serie B',f:'🇮🇹',r:'europe',s:2025,on:false},
+  {id:140,n:'La Liga',f:'🇪🇸',r:'europe',s:2025,on:true},
+  {id:78,n:'Bundesliga',f:'🇩🇪',r:'europe',s:2025,on:true},
+  {id:79,n:'Bundesliga 2',f:'🇩🇪',r:'europe',s:2025,on:false},
+  {id:61,n:'Ligue 1',f:'🇫🇷',r:'europe',s:2025,on:true},
+  {id:88,n:'Eredivisie',f:'🇳🇱',r:'europe',s:2025,on:true},
+  {id:94,n:'Liga Portugal',f:'🇵🇹',r:'europe',s:2025,on:true},
+  {id:144,n:'Jupiler Pro',f:'🇧🇪',r:'europe',s:2025,on:true},
+  {id:203,n:'Super Lig',f:'🇹🇷',r:'europe',s:2025,on:true},
+  {id:113,n:'Allsvenskan',f:'🇸🇪',r:'europe',s:2025,on:false},
+  {id:235,n:'Premier Liga RU',f:'🇷🇺',r:'europe',s:2025,on:false},
+  {id:2,n:'Champions Lge',f:'🇪🇺',r:'europe',s:2025,on:true},
+  {id:3,n:'Europa League',f:'🇪🇺',r:'europe',s:2025,on:true},
+  {id:848,n:'Conference Lge',f:'🇪🇺',r:'europe',s:2025,on:false},
+  {id:39,n:'Premier League',f:'🏴',r:'uk',s:2025,on:true},
+  {id:40,n:'Championship',f:'🏴',r:'uk',s:2025,on:true},
+  {id:45,n:'FA Cup',f:'🏴',r:'uk',s:2025,on:true},
+  {id:179,n:'Scottish Prem.',f:'🏴',r:'uk',s:2025,on:true},
+  {id:71,n:'Brasileirao A',f:'🇧🇷',r:'americas',s:2025,on:true},
+  {id:128,n:'Liga Argentina',f:'🇦🇷',r:'americas',s:2025,on:true},
+  {id:130,n:'Liga MX',f:'🇲🇽',r:'americas',s:2025,on:true},
+  {id:253,n:'MLS',f:'🇺🇸',r:'americas',s:2025,on:true},
+  {id:265,n:'Libertadores',f:'🌎',r:'americas',s:2025,on:false},
+  {id:98,n:'J-League',f:'🇯🇵',r:'asia',s:2025,on:true},
+  {id:292,n:'K-League',f:'🇰🇷',r:'asia',s:2025,on:true},
+  {id:307,n:'Saudi Pro Lge',f:'🇸🇦',r:'asia',s:2025,on:true},
 ];
 
-const MKT_L=['Ov 0.5 PT','Ov 1.5 FIN'];
-const MKT_K=['pt','f15'];
-const MKT_C=['#00aaff','#ffcc00'];
+const MKT_L=['Ov 0.5 PT','Ov 0.5 FIN','Ov 1.5 FIN'];
+const MKT_K=['pt','f05','f15'];
+const MKT_C=['#00aaff','#00cc66','#ffcc00'];
 
 /* ── IPC ────────────────────────────────────────────────────────── */
 function ipc(p,mkt){
@@ -115,8 +78,6 @@ function ipc(p,mkt){
   else               [ovc,ovt,mgc,mgt,h2h,sc,st,smg,sh]=[p.ov15f_c,p.ov15f_t,p.mgf_c,p.mgf_t,p.h2h_f15,72,68,2.5,58];
   let v=0.2*mgc+0.2*mgt+0.25*(ovc/100)+0.25*(ovt/100)+0.05*(h2h/100);
   v+=[p.topAttacco,(mgc+mgt)>=1.2,p.derby,p.motivazioni].filter(Boolean).length*0.03;
-  // Bonus favorita in casa: squadra forte che gioca davanti al pubblico di casa
-  if(p.isFavoriteHome) v+=0.05;
   let vb=0,vl=null,vc='#3a6a8f';
   const od=S.odds[p.id];
   if(od){
@@ -132,16 +93,7 @@ function ipc(p,mkt){
     }
   }
   const fok=ovc>=sc&&ovt>=st&&(mgc+mgt)>=smg&&h2h>=sh;
-
-  // Penalità: entrambe le squadre poco prolifiche
-  let penalty=0;
-  if(mgc<1.0&&mgt<1.0)      penalty=0.06;  // entrambe scarsissime
-  else if(mgc<1.1&&mgt<1.1) penalty=0.03;  // entrambe sotto la media
-
-  // Penalità: H2H molto basso (le due squadre si sono spesso bloccate)
-  if(h2h<45) penalty+=0.04;
-
-  const hr=Math.min(0.97, 0.5+v*0.55+(fok?0.05:0)-penalty);
+  const hr=Math.min(0.97,0.5+v*0.55+(fok?0.05:0));
   return{ipc:+v.toFixed(3),hr:+hr.toFixed(3),fok,veto:false,vl,vc};
 }
 
@@ -169,27 +121,6 @@ function mkStats(hs,as_,h2h){
   const gA=parseFloat(as_?.goals?.for?.average?.total)||1.35;
   const mgf_c=+gH.toFixed(2),mgf_t=+gA.toFixed(2);
   const mgpt_c=+(gH*.44).toFixed(2),mgpt_t=+(gA*.44).toFixed(2);
-
-  // Win% in casa (squadra di casa nelle partite giocate in casa)
-  const homeW=parseInt(hs?.fixtures?.wins?.home)||0;
-  const homeD=parseInt(hs?.fixtures?.draws?.home)||0;
-  const homeL=parseInt(hs?.fixtures?.loses?.home)||0;
-  const homeTot=homeW+homeD+homeL||1;
-  const homeWinPct=Math.round(homeW/homeTot*100);       // % vittorie in casa
-  const homeStrength=+(gH-(parseFloat(hs?.goals?.against?.average?.home)||1.2)).toFixed(2); // gol fatti - subiti in casa
-
-  // Win% in trasferta (squadra ospite)
-  const awayW=parseInt(as_?.fixtures?.wins?.away)||0;
-  const awayD=parseInt(as_?.fixtures?.draws?.away)||0;
-  const awayL=parseInt(as_?.fixtures?.loses?.away)||0;
-  const awayTot=awayW+awayD+awayL||1;
-  const awayWinPct=Math.round(awayW/awayTot*100);       // % vittorie in trasferta
-  const awayStrength=+(gA-(parseFloat(as_?.goals?.against?.average?.away)||1.4)).toFixed(2);
-
-  // Favorita in casa: la squadra di casa ha forza nettamente superiore
-  // homeStrength > awayStrength + 0.3  →  casa chiaramente favorita
-  const isFavoriteHome = homeStrength > awayStrength + 0.3 && homeWinPct >= 45;
-
   let h2h_pt=62,h2h_f05=72,h2h_f15=60;
   if(h2h?.length){
     const n=h2h.length;
@@ -201,8 +132,7 @@ function mkStats(hs,as_,h2h){
     ov05pt_c:pOv(mgpt_c),ov05pt_t:pOv(mgpt_t),
     ov05f_c:pOv(mgf_c),ov05f_t:pOv(mgf_t),
     ov15f_c:pOv(mgf_c*.72),ov15f_t:pOv(mgf_t*.72),
-    h2h_pt,h2h_f05,h2h_f15,
-    homeWinPct,awayWinPct,homeStrength,awayStrength,isFavoriteHome};
+    h2h_pt,h2h_f05,h2h_f15};
 }
 
 async function fetchOdds(fid){
@@ -347,42 +277,13 @@ async function liveUpdate(){
     }
     const el=document.getElementById('lbsub');
     if(el)el.textContent='Agg. '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  autoSetEsitiFinite();
   }catch(e){console.warn(e);}
-}
-
-/* Imposta esiti automatici per partite FT senza esito ancora */
-function autoSetEsitiFinite(){
-  let changed=false;
-  S.matches.forEach(function(m){
-    const d=S.live[m.id];
-    if(!d||!['FT','AET','PEN'].includes(d.status))return;
-    const htG=(d.htHome||0)+(d.htAway||0);
-    const ftG=(d.homeGoals||0)+(d.awayGoals||0);
-    const map={pt:htG>0?'V':'P',f15:ftG>1?'V':'P'};
-    MKT_K.forEach(function(k){
-      const key=m.id+'_'+k;
-      if(S.esiti[key]===undefined){S.esiti[key]=map[k];changed=true;}
-    });
-  });
-  if(changed){
-    LS.set('esiti',S.esiti);
-    S.matches.forEach(function(m){
-      MKT_K.forEach(function(k){
-        ['V','P','N'].forEach(function(v){
-          const b=document.getElementById('eb-'+m.id+'-'+k+'-'+v);
-          if(b)b.className='ebtn'+(S.esiti[m.id+'_'+k]===v?' s'+v:'');
-        });
-      });
-    });
-    if(S.page==='stats')renderPage();
-  }
 }
 
 function autoEsiti(fid,d){
   if(!['FT','AET','PEN'].includes(d.status))return;
   const hG=(d.htHome??0)+(d.htAway??0),fG=(d.homeGoals??0)+(d.awayGoals??0);
-  const map={pt:hG>0?'V':'P',f15:fG>1?'V':'P'};
+  const map={pt:hG>0?'V':'P',f05:fG>0?'V':'P',f15:fG>1?'V':'P'};
   let upd=false;
   MKT_K.forEach(k=>{const key=`${fid}_${k}`;if(!S.esiti[key]){S.esiti[key]=map[k];upd=true;}});
   if(upd){LS.set('esiti',S.esiti);
@@ -521,162 +422,30 @@ function saveKeySettings(){
   if(document.getElementById('keyinput'))document.getElementById('keyinput').value=k;
   alert('✅ API Key salvata!');renderPage();
 }
-function setAutoSec(s){
-  S.autoSec=s;LS.set('autoSec',s);
-  if(s===0){stopAuto();}else if(S.autoOn){stopAuto();startAuto();}
-  renderPage();
-}
+function setAutoSec(s){S.autoSec=s;LS.set('autoSec',s);if(S.autoOn){stopAuto();startAuto();}renderPage();}
 function toggleLeague(i){S.leagues[i].on=!S.leagues[i].on;LS.set('leagues',S.leagues);renderPage();}
 function clearEsiti(){if(!confirm('Cancellare tutto lo storico?'))return;S.esiti={};LS.set('esiti',{});renderPage();}
 function dismiss(){S.dismissed=true;LS.set('dismissed',true);renderPage();}
 function exportCSV(){
-  const rows=[['Data','Campionato','Ora','Casa','Trasferta','Risultato PT','Risultato FIN',
-    'IPC_PT','HR_PT%','IPC_15F','HR_15F%',
-    'Esito_PT','Esito_15F',
-    'Gol/g Casa','Gol/g Trasf','Win% Casa','Win% Trasf',
-    'Fav.Casa','H2H PT%','H2H 1.5F%','Stato']];
+  const rows=[['Data','Camp','Ora','Casa','Trasferta','Risultato','IPC_PT','HR_PT%','IPC_05F','HR_05F%','IPC_15F','HR_15F%','Esito_PT','Esito_05F','Esito_15F','Stato']];
   const td=new Date().toLocaleDateString('it-IT');
-  S.matches.filter(function(m){return !m._loading;}).forEach(function(p){
-    const rPT=ipc(p,'pt'), r15=ipc(p,'f15');
+  S.matches.filter(m=>!m._loading).forEach(p=>{
+    const r=MKT_K.map(k=>ipc(p,k));
     const d=S.live[p.id]||{};
-    const risPT=(d.htHome!=null&&d.htAway!=null)?d.htHome+':'+d.htAway:'';
-    const risFIN=(d.homeGoals!=null&&d.awayGoals!=null)?d.homeGoals+':'+d.awayGoals:'';
-    rows.push([
-      td, p.campionato, p.orario, p.casa, p.trasferta,
-      risPT, risFIN,
-      rPT.ipc, (rPT.hr*100).toFixed(1),
-      r15.ipc, (r15.hr*100).toFixed(1),
-      S.esiti[p.id+'_pt']||'', S.esiti[p.id+'_f15']||'',
-      p.mgf_c||'', p.mgf_t||'',
-      p.homeWinPct||'', p.awayWinPct||'',
-      p.isFavoriteHome?'SI':'NO',
-      p.h2h_pt||'', p.h2h_f15||'',
-      d.status||'NS'
-    ]);
+    const score=d.homeGoals!=null?`${d.homeGoals}:${d.awayGoals}`:'—';
+    rows.push([td,p.campionato,p.orario,p.casa,p.trasferta,score,
+      r[0].ipc,(r[0].hr*100).toFixed(1),r[1].ipc,(r[1].hr*100).toFixed(1),r[2].ipc,(r[2].hr*100).toFixed(1),
+      S.esiti[`${p.id}_pt`]||'',S.esiti[`${p.id}_f05`]||'',S.esiti[`${p.id}_f15`]||'',d.status||'NS']);
   });
-  const csv=rows.map(function(r){
-    return r.map(function(v){
-      return '"'+String(v===null||v===undefined?'':v).replace(/"/g,'""')+'"';
-    }).join(';');
-  }).join('\n');
-  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a');
-  a.href=url;
-  a.download='Scout_'+new Date().toISOString().split('T')[0]+'.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`Scout_${td.replace(/\//g,'-')}.csv`;a.click();
 }
 
-
-function esportaArchivio(){
-  if(!S.matches.length){
-    alert('Nessuna partita da esportare. Carica prima le partite del giorno.');
-    return;
-  }
-  
-  const today=new Date().toLocaleDateString('it-IT');
-  const todayISO=new Date().toISOString().split('T')[0];
-  
-  // Header arricchito per analisi 0-0
-  const header=[
-    'Data','Campionato','Paese','Ora',
-    'Casa','Trasferta',
-    'Ris_PT','Ris_FIN',           // es. "0:0" / "1:2"
-    'GolPT','GolFIN',             // numero gol
-    'Esito_PT','Esito_1.5FIN','','  // mercati' // V/P/N
-    'IPC_PT','HR_PT%',
-    'IPC_1.5F','HR_1.5F%',
-    'GolMedCasa','GolMedTrasf',   // media gol stagionale
-    'OvCasaPT%','OvTrasfPT%',     // statistiche storiche
-    'OvCasaFIN%','OvTrasfFIN%',
-    'H2H_PT%','H2H_05F%','H2H_15F%',
-    'TopAttacco','VetoForma',
-    'Nota_0_0',                    // campo libero per analisi
-    'Status'
-  ];
-  
-  const rows=[header];
-  
-  S.matches.filter(function(m){return !m._loading;}).forEach(function(p){
-    const r=MKT_K.map(function(k){return ipc(p,k);});
-    const d=S.live[p.id]||{};
-    
-    const ftH=d.homeGoals!=null?d.homeGoals:'';
-    const ftA=d.awayGoals!=null?d.awayGoals:'';
-    const htH=d.htHome!=null?d.htHome:'';
-    const htA=d.htAway!=null?d.htAway:'';
-    
-    const risPT=(htH!==''&&htA!=='')?htH+':'+htA:'';
-    const risFIN=(ftH!==''&&ftA!=='')?ftH+':'+ftA:'';
-    const golPT=(htH!==''&&htA!=='')?Number(htH)+Number(htA):'';
-    const golFIN=(ftH!==''&&ftA!=='')?Number(ftH)+Number(ftA):'';
-    
-    // Determina se è 0-0 (interessante per analisi)
-    const is00FIN=(golFIN===0);
-    const nota00=is00FIN?'0-0 FINALE — analizzare':'';
-    
-    rows.push([
-      today, p.campionato, p.country, p.orario,
-      p.casa, p.trasferta,
-      risPT, risFIN,
-      golPT, golFIN,
-      S.esiti[p.id+'_pt']||'', S.esiti[p.id+'_f15']||''
-      ipc(p,'pt').ipc, (ipc(p,'pt').hr*100).toFixed(1),
-      ipc(p,'f15').ipc, (ipc(p,'f15').hr*100).toFixed(1),
-      p.mgf_c||'', p.mgf_t||'',
-      p.ov05pt_c||'', p.ov05pt_t||'',
-      p.ov05f_c||'', p.ov05f_t||'',
-      p.homeWinPct||'', p.awayWinPct||'',
-      p.isFavoriteHome?'SI':'NO',
-      p.h2h_pt||'', p.h2h_f15||'',
-      p.topAttacco?'SI':'NO', p.veto_forma?'SI':'NO',
-      nota00,
-      d.status||'NS'
-    ]);
-  });
-  
-  // Crea CSV con separatore ; (compatibile Excel/Google Sheets italiano)
-  const csv=rows.map(function(r){
-    return r.map(function(v){
-      return '"'+String(v===null||v===undefined?'':v).replace(/"/g,'""')+'"';
-    }).join(';');
-  }).join('\n');
-  
-  // Download CSV
-  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download='ScoutOver_Archivio_'+todayISO+'.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  
-  // Conta 0-0
-  const zero=S.matches.filter(function(m){
-    const d=S.live[m.id]||{};
-    return d.homeGoals===0&&d.awayGoals===0&&['FT','AET'].includes(d.status);
-  });
-  
-  setTimeout(function(){
-    alert(
-      '✅ Archivio esportato!\n\n'+
-      '📊 Partite totali: '+S.matches.filter(function(m){return !m._loading;}).length+'\n'+
-      (zero.length?'🔴 Partite 0-0 oggi: '+zero.length+'\n\n':'\n')+
-      'Come importare in Google Sheets:\n'+
-      '1. Apri Google Sheets (sheets.google.com)\n'+
-      '2. File → Importa → Carica il file CSV\n'+
-      '3. Separatore: punto e virgola (;)\n'+
-      '4. Aggiungi al foglio esistente per accumulare lo storico'
-    );
-  }, 500);
-}
-
-
+/* ══════════════════════════════════════════════════════════════════
+   RENDER PRINCIPALE — un'unica funzione che aggiorna #main
+   ══════════════════════════════════════════════════════════════════ */
 function renderPage(){
   const main=document.getElementById('main');
   if(!main)return;
@@ -808,25 +577,18 @@ function buildAnalisi(){
 
   const showR=S.region==='all'?null:S.region;
   const analizzate=S.matches.filter(m=>!m._loading&&(!showR||m.region===showR));
-  const sorted=[...analizzate].sort((a,b)=>{
-    const ra=ipc(a,S.mkt), rb=ipc(b,S.mkt);
-    // Prima le non-veto; a parità, favorita in casa prima; a parità, HR più alto
-    if(ra.veto!==rb.veto) return ra.veto?1:-1;
-    const favA=a.isFavoriteHome?0.015:0;
-    const favB=b.isFavoriteHome?0.015:0;
-    return (rb.hr+favB)-(ra.hr+favA);
-  });
+  const sorted=[...analizzate].sort((a,b)=>ipc(b,S.mkt).hr-ipc(a,S.mkt).hr);
   const filt=sorted.filter(p=>{
     const r=ipc(p,S.mkt);
-    if(S.conf==='alta') return !r.veto&&r.hr>=0.85;
-    if(S.conf==='media')return !r.veto&&r.hr>=0.75&&r.hr<0.85;
+    if(S.conf==='alta') return !r.veto&&r.hr>=0.88;
+    if(S.conf==='media')return !r.veto&&r.hr>=0.75&&r.hr<0.88;
+    if(S.conf==='bassa')return !r.veto&&r.hr<0.75;
     if(S.conf==='veto') return r.veto;
-    // "Tutte": mostra solo partite con almeno un segnale valido (hr >= 0.68)
-    return !r.veto&&r.hr>=0.68;
+    return true;
   });
   const sum={
-    alta: sorted.filter(p=>{const r=ipc(p,S.mkt);return !r.veto&&r.hr>=0.85;}).length,
-    media:sorted.filter(p=>{const r=ipc(p,S.mkt);return !r.veto&&r.hr>=0.75&&r.hr<0.85;}).length,
+    alta:sorted.filter(p=>{const r=ipc(p,S.mkt);return !r.veto&&r.hr>=0.88;}).length,
+    media:sorted.filter(p=>{const r=ipc(p,S.mkt);return !r.veto&&r.hr>=0.75&&r.hr<0.88;}).length,
   };
 
   let h='';
@@ -881,7 +643,8 @@ function buildAnalisi(){
         </div>
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
           <span style="font-size:11px;font-weight:800;color:${rt.c}">${rt.l}${best.veto?'':' '+Math.round(best.hr*100)+'%'}</span>
-          ${p.isFavoriteHome?'<span style="font-size:9px;padding:2px 7px;border-radius:10px;background:rgba(0,170,255,.12);border:1px solid rgba(0,170,255,.3);color:#00aaff">🏠 Fav. casa</span>':''}${best.vl?`<span style="font-size:9px;padding:2px 7px;border-radius:10px;background:#0a1825;color:${best.vc};border:1px solid ${best.vc}33">${best.vl}</span>`:''}\n        </div>
+          ${best.vl?`<span style="font-size:9px;padding:2px 7px;border-radius:10px;background:#0a1825;color:${best.vc};border:1px solid ${best.vc}33">${best.vl}</span>`:''}
+        </div>
         <div class="cmkts">`;
     MKT_K.forEach((k,i)=>{
       const r=ipc(p,k);
@@ -902,14 +665,11 @@ function buildAnalisi(){
         ${liveBox(p.id,d,p)}
         ${oddsBox(p,S.mkt)}
         <div class="sgrid">
-          ${[['PT Casa',p.ov05pt_c+'%',p.ov05pt_c>=75],
-             ['PT Trasf.',p.ov05pt_t+'%',p.ov05pt_t>=70],
+          ${[['PT Casa',p.ov05pt_c+'%',p.ov05pt_c>=75],['PT Trasf.',p.ov05pt_t+'%',p.ov05pt_t>=70],
              ['Gol PT',+(p.mgpt_c+p.mgpt_t).toFixed(2),(p.mgpt_c+p.mgpt_t)>=1.4],
              ['H2H PT',p.h2h_pt+'%',p.h2h_pt>=65],
              ['Gol FIN',+(p.mgf_c+p.mgf_t).toFixed(2),(p.mgf_c+p.mgf_t)>=2.5],
-             ['H2H 1.5F',p.h2h_f15+'%',p.h2h_f15>=58],
-             ['Win% Casa',(p.homeWinPct||0)+'%',(p.homeWinPct||0)>=50],
-             ['Win% Trasf.',(p.awayWinPct||0)+'%',(p.awayWinPct||0)<=30]
+             ['H2H 1.5F',p.h2h_f15+'%',p.h2h_f15>=58]
             ].map(([l,v,ok])=>`<div class="sbox"><div class="sl">${l}</div><div class="sv" style="color:${ok?'#00cc66':'#ff6688'}">${v}</div></div>`).join('')}
         </div>
         <div class="flags">
@@ -936,7 +696,7 @@ function buildAnalisi(){
 
 /* ── STATS ──────────────────────────────────────────────────────── */
 function buildStats(){
-  const st={pt:{V:0,P:0,N:0},f15:{V:0,P:0,N:0}};
+  const st={pt:{V:0,P:0,N:0},f05:{V:0,P:0,N:0},f15:{V:0,P:0,N:0}};
   const cf={alta:{V:0,P:0},media:{V:0,P:0},bassa:{V:0,P:0}};
   Object.entries(S.esiti).forEach(([key,val])=>{
     const[id,mkt]=key.split('_');if(!st[mkt])return;
@@ -975,7 +735,7 @@ function buildStats(){
   });
 
   h+=`</div><div class="slbl">Per Fascia</div>`;
-  [['🟢 Alta ≥88%','alta','#00ff88'],['🟡 Media 75-87%','media','#ffcc00']].forEach(([l,k,c])=>{
+  [['🟢 Alta ≥88%','alta','#00ff88'],['🟡 Media 75-87%','media','#ffcc00'],['🔴 Bassa <75%','bassa','#ff4466']].forEach(([l,k,c])=>{
     const s=cf[k];const g=s.V+s.P;const hr=g>0?(s.V/g*100).toFixed(1):null;
     h+=`<div class="sfrow" style="border:1px solid ${c}22">
       <span style="flex:1;font-size:12px;color:${c}">${l}</span>
@@ -985,46 +745,6 @@ function buildStats(){
     </div>`;
   });
 
-
-
-  // Sezione analisi partite 0-0 di oggi
-  const oggi00=S.matches.filter(function(m){
-    const d=S.live[m.id]||{};
-    return d.homeGoals===0&&d.awayGoals===0&&['FT','AET','PEN'].includes(d.status);
-  });
-  if(oggi00.length>0){
-    h+='<div class="zero-box">';
-    h+='<div class="zero-tit">🔴 Partite 0-0 di Oggi ('+oggi00.length+')</div>';
-    h+='<div class="zero-desc">Analizza queste partite per trovare pattern e migliorare la selezione</div>';
-    oggi00.forEach(function(m){
-      const r_pt=ipc(m,'pt'),r_f15=ipc(m,'f15');
-      h+='<div class="zero-row">';
-      h+='<div class="zero-match">'+m.casa+' vs '+m.trasferta+'<span class="zero-camp"> · '+m.campionato+'</span></div>';
-      h+='<div class="zero-stats">';
-      h+='<span>IPC PT: <b>'+r_pt.ipc+'</b></span>';
-      h+='<span>HR: <b>'+(r_pt.hr*100).toFixed(0)+'%</b></span>';
-      h+='<span>Gol/g: <b>'+((m.mgf_c||0)+(m.mgf_t||0)).toFixed(1)+'</b></span>';
-      h+='<span>H2H PT: <b>'+(m.h2h_pt||0)+'%</b></span>';
-      h+='</div></div>';
-    });
-    h+='</div>';
-  }
-  
-  // Box aggiornamento risultati fine giornata
-  h+='<div class="aggbox">';
-  h+='<div class="aggtit">📅 Aggiornamento Risultati Fine Giornata</div>';
-  h+='<div class="aggdesc">Imposta automaticamente tutti gli esiti V/P di oggi per tutti e 3 i mercati (Ov 0.5 PT, Ov 0.5 FIN, Ov 1.5 FIN) recuperando i risultati finali da API-Football.</div>';
-  h+='<button id="btn-aggiorna-esiti" onclick="aggiornaRisultatiGiornata()" class="aggbtn">🔄 Aggiorna tutti i risultati di oggi</button>';
-  h+='<div class="agginfo">⚠️ Usa 1 richiesta API. Sovrascrive gli esiti già impostati.</div>';
-  h+='</div>';
-  
-  // Box archivio Google Sheets  
-  h+='<div class="aggbox" style="border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.05)">';
-  h+='<div class="aggtit" style="color:#00ff88">📊 Archivio Google Sheets</div>';
-  h+='<div class="aggdesc">Esporta tutte le partite in un CSV da importare su Google Sheets. Include dati per analisi pattern sulle partite 0-0 (sempre perdenti).</div>';
-  h+='<button onclick="esportaArchivio()" class="aggbtn" style="border-color:#00ff88;color:#00ff88;background:rgba(0,255,136,.08)">📥 Esporta CSV per Google Sheets</button>';
-  h+='<div class="agginfo">Le partite 0-0 vengono evidenziate automaticamente nel CSV</div>';
-  h+='</div';
   return h;
 }
 
@@ -1054,7 +774,7 @@ function buildSettings(){
     <div class="ssectit">⏱️ Aggiornamento Automatico</div>
     <div class="setrow"><div class="setlbl">Stato</div><div class="setval" style="color:${S.autoOn?'#00ff88':'#556'}">${S.autoOn?'🔴 LIVE':'⚫ OFF'}</div></div>
     <div style="display:flex;gap:6px;margin-top:10px">
-      ${[[1800,"30m"],[3600,"1h"],[7200,"2h"],[0,"Off"]].map(s=>`<button onclick="setAutoSec(${s})" style="flex:1;padding:9px 0;border-radius:8px;background:${S.autoSec===s?'rgba(0,170,255,.2)':'rgba(255,255,255,.03)'};border:1px solid ${S.autoSec===s?'#00aaff':'#1a3a5a'};color:${S.autoSec===s?'#00aaff':'#3a6a8f'};font-size:11px;cursor:pointer;font-weight:${S.autoSec===s?700:400}">${s<60?s+'s':s/60+'m'}</button>`).join('')}
+      ${[30,60,120,300].map(s=>`<button onclick="setAutoSec(${s})" style="flex:1;padding:9px 0;border-radius:8px;background:${S.autoSec===s?'rgba(0,170,255,.2)':'rgba(255,255,255,.03)'};border:1px solid ${S.autoSec===s?'#00aaff':'#1a3a5a'};color:${S.autoSec===s?'#00aaff':'#3a6a8f'};font-size:11px;cursor:pointer;font-weight:${S.autoSec===s?700:400}">${s<60?s+'s':s/60+'m'}</button>`).join('')}
     </div>
     <div style="font-size:10px;color:#2a5a7f;margin-top:8px;line-height:1.5">ℹ️ 1 sola richiesta API per ciclo. Esiti V/P auto a fine partita.</div>
   </div>
