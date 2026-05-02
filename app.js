@@ -530,92 +530,47 @@ function toggleLeague(i){S.leagues[i].on=!S.leagues[i].on;LS.set('leagues',S.lea
 function clearEsiti(){if(!confirm('Cancellare tutto lo storico?'))return;S.esiti={};LS.set('esiti',{});renderPage();}
 function dismiss(){S.dismissed=true;LS.set('dismissed',true);renderPage();}
 function exportCSV(){
-  const rows=[['Data','Camp','Ora','Casa','Trasferta','Risultato','IPC_PT','HR_PT%','IPC_05F','HR_05F%','IPC_15F','HR_15F%','Esito_PT','Esito_05F','Esito_15F','Stato']];
+  const rows=[['Data','Campionato','Ora','Casa','Trasferta','Risultato PT','Risultato FIN',
+    'IPC_PT','HR_PT%','IPC_15F','HR_15F%',
+    'Esito_PT','Esito_15F',
+    'Gol/g Casa','Gol/g Trasf','Win% Casa','Win% Trasf',
+    'Fav.Casa','H2H PT%','H2H 1.5F%','Stato']];
   const td=new Date().toLocaleDateString('it-IT');
-  S.matches.filter(m=>!m._loading).forEach(p=>{
-    const r=MKT_K.map(k=>ipc(p,k));
+  S.matches.filter(function(m){return !m._loading;}).forEach(function(p){
+    const rPT=ipc(p,'pt'), r15=ipc(p,'f15');
     const d=S.live[p.id]||{};
-    const score=d.homeGoals!=null?`${d.homeGoals}:${d.awayGoals}`:'—';
-    rows.push([td,p.campionato,p.orario,p.casa,p.trasferta,score,
-      r[0].ipc,(r[0].hr*100).toFixed(1),r[1].ipc,(r[1].hr*100).toFixed(1),r[2].ipc,(r[2].hr*100).toFixed(1),
-      S.esiti[`${p.id}_pt`]||'',S.esiti[`${p.id}_f05`]||'',S.esiti[`${p.id}_f15`]||'',d.status||'NS']);
+    const risPT=(d.htHome!=null&&d.htAway!=null)?d.htHome+':'+d.htAway:'';
+    const risFIN=(d.homeGoals!=null&&d.awayGoals!=null)?d.homeGoals+':'+d.awayGoals:'';
+    rows.push([
+      td, p.campionato, p.orario, p.casa, p.trasferta,
+      risPT, risFIN,
+      rPT.ipc, (rPT.hr*100).toFixed(1),
+      r15.ipc, (r15.hr*100).toFixed(1),
+      S.esiti[p.id+'_pt']||'', S.esiti[p.id+'_f15']||'',
+      p.mgf_c||'', p.mgf_t||'',
+      p.homeWinPct||'', p.awayWinPct||'',
+      p.isFavoriteHome?'SI':'NO',
+      p.h2h_pt||'', p.h2h_f15||'',
+      d.status||'NS'
+    ]);
   });
-  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const csv=rows.map(function(r){
+    return r.map(function(v){
+      return '"'+String(v===null||v===undefined?'':v).replace(/"/g,'""')+'"';
+    }).join(';');
+  }).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
-  a.download=`Scout_${td.replace(/\//g,'-')}.csv`;a.click();
+  a.href=url;
+  a.download='Scout_'+new Date().toISOString().split('T')[0]+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   RENDER PRINCIPALE — un'unica funzione che aggiorna #main
-   ══════════════════════════════════════════════════════════════════ */
-/* ── AGGIORNAMENTO RISULTATI FINE GIORNATA ───────────────────── */
-async function aggiornaRisultatiGiornata(){
-  if(!S.apiKey){alert('Inserisci prima la API Key!');return;}
-  const btn=document.getElementById('btn-aggiorna-esiti');
-  if(btn){btn.disabled=true;btn.textContent='⏳ Aggiornamento...';}
-  
-  let aggiornate=0;
-  try{
-    // Recupera tutte le partite di oggi come fixtures concluse
-    const today=new Date().toISOString().split('T')[0];
-    const fd=await apiFetch('fixtures?date='+today+'&timezone=Europe/Rome');
-    const finished=(fd.response||[]);
-    
-    finished.filter(function(f){
-        const st=f.fixture&&f.fixture.status&&f.fixture.status.short;
-        return ['FT','AET','PEN'].includes(st);
-      }).forEach(function(f){
-      const fid=f.fixture&&f.fixture.id;
-      if(!fid)return;
-      const htH=f.score&&f.score.halftime&&f.score.halftime.home!=null?f.score.halftime.home:null;
-      const htA=f.score&&f.score.halftime&&f.score.halftime.away!=null?f.score.halftime.away:null;
-      const ftH=f.goals&&f.goals.home!=null?f.goals.home:null;
-      const ftA=f.goals&&f.goals.away!=null?f.goals.away:null;
-      if(ftH===null||ftA===null)return;
-      
-      const htG=(htH||0)+(htA||0);
-      const ftG=ftH+ftA;
-      const map={
-        pt:  htG>0?'V':'P',
-        f05: ftG>0?'V':'P',
-        f15: ftG>1?'V':'P'
-      };
-      
-      // Aggiorna live data
-      if(!S.live[fid])S.live[fid]={};
-      S.live[fid].homeGoals=ftH;S.live[fid].awayGoals=ftA;
-      S.live[fid].htHome=htH;S.live[fid].htAway=htA;
-      S.live[fid].status=f.fixture.status.short;
-      
-      // Imposta esiti per tutte le partite trovate (sovrascrivi solo quelli non impostati manualmente)
-      // Ma qui sovrascriviamo tutti per garantire correttezza
-      let found=false;
-      MKT_K.forEach(function(k){
-        const key=fid+'_'+k;
-        // Imposta solo se la partita è in S.matches (è di oggi)
-        const match=S.matches.find(function(m){return m.id===fid;});
-        if(!match)return;
-        S.esiti[key]=map[k];
-        found=true;
-      });
-      if(found)aggiornate++;
-    });
-    
-    if(aggiornate>0){
-      LS.set('esiti',S.esiti);
-      alert('✅ Aggiornati i risultati di '+aggiornate+' partite!\nOv 0.5 PT, Ov 0.5 FIN e Ov 1.5 FIN impostati automaticamente.');
-    }else{
-      alert('ℹ️ Nessuna partita conclusa trovata per oggi.\n(Le partite devono essere nello stato FT/AET/PEN)');
-    }
-  }catch(e){
-    alert('❌ Errore: '+e.message);
-  }
-  if(btn){btn.disabled=false;btn.textContent='🔄 Aggiorna tutti i risultati di oggi';}
-  renderPage();
-}
 
-/* ── ARCHIVIO PARTITE — GOOGLE SHEETS ──────────────────────────── */
 function esportaArchivio(){
   if(!S.matches.length){
     alert('Nessuna partita da esportare. Carica prima le partite del giorno.');
@@ -631,7 +586,7 @@ function esportaArchivio(){
     'Casa','Trasferta',
     'Ris_PT','Ris_FIN',           // es. "0:0" / "1:2"
     'GolPT','GolFIN',             // numero gol
-    'Ov05PT','Ov05FIN','Ov15FIN', // V/P/N
+    'Esito_PT','Esito_1.5FIN','','  // mercati' // V/P/N
     'IPC_PT','HR_PT%',
     'IPC_05F','HR_05F%',
     'IPC_15F','HR_15F%',
@@ -669,14 +624,15 @@ function esportaArchivio(){
       p.casa, p.trasferta,
       risPT, risFIN,
       golPT, golFIN,
-      S.esiti[p.id+'_pt']||'', S.esiti[p.id+'_f05']||'', S.esiti[p.id+'_f15']||'',
-      r[0].ipc, (r[0].hr*100).toFixed(1),
-      r[1].ipc, (r[1].hr*100).toFixed(1),
-      r[2].ipc, (r[2].hr*100).toFixed(1),
+      S.esiti[p.id+'_pt']||'', S.esiti[p.id+'_f15']||'', '',  // f05 rimosso
+      ipc(p,'pt').ipc, (ipc(p,'pt').hr*100).toFixed(1),
+      ipc(p,'f15').ipc, (ipc(p,'f15').hr*100).toFixed(1),
       p.mgf_c||'', p.mgf_t||'',
       p.ov05pt_c||'', p.ov05pt_t||'',
       p.ov05f_c||'', p.ov05f_t||'',
-      p.h2h_pt||'', p.h2h_f05||'', p.h2h_f15||'',
+      p.homeWinPct||'', p.awayWinPct||'',
+      p.isFavoriteHome?'SI':'NO',
+      p.h2h_pt||'', p.h2h_f15||'',
       p.topAttacco?'SI':'NO', p.veto_forma?'SI':'NO',
       nota00,
       d.status||'NS'
