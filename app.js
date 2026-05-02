@@ -382,7 +382,7 @@ function autoSetEsitiFinite(){
 function autoEsiti(fid,d){
   if(!['FT','AET','PEN'].includes(d.status))return;
   const hG=(d.htHome??0)+(d.htAway??0),fG=(d.homeGoals??0)+(d.awayGoals??0);
-  const map={pt:hG>0?'V':'P',f05:fG>0?'V':'P',f15:fG>1?'V':'P'};
+  const map={pt:hG>0?'V':'P',f15:fG>1?'V':'P'};
   let upd=false;
   MKT_K.forEach(k=>{const key=`${fid}_${k}`;if(!S.esiti[key]){S.esiti[key]=map[k];upd=true;}});
   if(upd){LS.set('esiti',S.esiti);
@@ -588,8 +588,7 @@ function esportaArchivio(){
     'GolPT','GolFIN',             // numero gol
     'Esito_PT','Esito_1.5FIN','','  // mercati' // V/P/N
     'IPC_PT','HR_PT%',
-    'IPC_05F','HR_05F%',
-    'IPC_15F','HR_15F%',
+    'IPC_1.5F','HR_1.5F%',
     'GolMedCasa','GolMedTrasf',   // media gol stagionale
     'OvCasaPT%','OvTrasfPT%',     // statistiche storiche
     'OvCasaFIN%','OvTrasfFIN%',
@@ -624,7 +623,7 @@ function esportaArchivio(){
       p.casa, p.trasferta,
       risPT, risFIN,
       golPT, golFIN,
-      S.esiti[p.id+'_pt']||'', S.esiti[p.id+'_f15']||'', '',  // f05 rimosso
+      S.esiti[p.id+'_pt']||'', S.esiti[p.id+'_f15']||''
       ipc(p,'pt').ipc, (ipc(p,'pt').hr*100).toFixed(1),
       ipc(p,'f15').ipc, (ipc(p,'f15').hr*100).toFixed(1),
       p.mgf_c||'', p.mgf_t||'',
@@ -937,7 +936,7 @@ function buildAnalisi(){
 
 /* ── STATS ──────────────────────────────────────────────────────── */
 function buildStats(){
-  const st={pt:{V:0,P:0,N:0},f05:{V:0,P:0,N:0},f15:{V:0,P:0,N:0}};
+  const st={pt:{V:0,P:0,N:0},f15:{V:0,P:0,N:0}};
   const cf={alta:{V:0,P:0},media:{V:0,P:0},bassa:{V:0,P:0}};
   Object.entries(S.esiti).forEach(([key,val])=>{
     const[id,mkt]=key.split('_');if(!st[mkt])return;
@@ -998,7 +997,7 @@ function buildStats(){
     h+='<div class="zero-tit">🔴 Partite 0-0 di Oggi ('+oggi00.length+')</div>';
     h+='<div class="zero-desc">Analizza queste partite per trovare pattern e migliorare la selezione</div>';
     oggi00.forEach(function(m){
-      const r_pt=ipc(m,'pt'),r_f05=ipc(m,'f05'),r_f15=ipc(m,'f15');
+      const r_pt=ipc(m,'pt'),r_f15=ipc(m,'f15');
       h+='<div class="zero-row">';
       h+='<div class="zero-match">'+m.casa+' vs '+m.trasferta+'<span class="zero-camp"> · '+m.campionato+'</span></div>';
       h+='<div class="zero-stats">';
